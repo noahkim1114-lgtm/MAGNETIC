@@ -154,6 +154,21 @@
   .rec .desc small { display: block; color: var(--muted); font-size: 11px; }
   .rec .score { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 
+  /* ---------- 친구 ---------- */
+  .friends .addrow { display: flex; gap: 8px; margin-bottom: 10px; }
+  .friends .addrow input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 14px; }
+  .friend { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 6px; font-size: 14px; }
+  .friend:hover { background: #1a1a1a; }
+  .friend .st { width: 9px; height: 9px; border-radius: 50%; background: #444; flex: none; }
+  .friend .st.on { background: #4cd964; box-shadow: 0 0 6px #4cd964; }
+  .friend .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .friend .name small { color: var(--muted); margin-left: 6px; font-size: 11px; }
+  .friend .btn.small { padding: 5px 9px; font-size: 12px; }
+  .invite { background: #1a1a1a; border: 1px solid #444; border-radius: 6px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+  .invite .grow { flex: 1; min-width: 160px; }
+  .invite .btn.small { padding: 6px 12px; }
+  body.online-game .seg { opacity: .35; pointer-events: none; }
+  .vs-line { font-size: 13px; color: var(--muted); }
   .page-wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
   .page-wrap h2 { margin: 0 0 14px; }
   .summary { display: flex; gap: 18px; margin-bottom: 16px; font-size: 14px; color: var(--muted); }
@@ -238,10 +253,12 @@
   </div>
   <div class="app">
     <div class="board-col">
+      <div id="inviteBox" style="display:none"></div>
       <div class="status-box">
         <div id="turnBox" class="turn-text">흑 차례</div>
         <div id="winrateBox" class="winrate-text train-only">흑 — · 백 —</div>
       </div>
+      <div class="vs-line" id="vsLine"></div>
       <div class="clock-row top"><div class="who"><span class="dot w"></span>백</div><div class="clock w" id="clockW">0:00</div></div>
       <div class="board-row">
         <div class="eval-bar train-only" id="evalBar"><div class="fill" id="evalFill"></div><div class="lbl top" id="evalTop">—</div><div class="lbl bottom" id="evalBottom">—</div></div>
@@ -316,6 +333,13 @@
         <button class="btn train-only" id="hintBtn">힌트 보기</button>
       </div>
 
+      <div class="records friends" id="friendsBox" style="display:none">
+        <div class="head"><b>친구</b></div>
+        <div class="addrow"><input id="friendNick" maxlength="10" placeholder="닉네임"><button class="btn small" id="friendAddBtn">추가</button></div>
+        <div id="friendList"></div>
+        <div class="empty" id="friendMsg"></div>
+      </div>
+
       <div class="records" id="recordsBox">
         <div class="head"><b>최근 5경기</b><button class="btn small ghost" id="moreBtn">더보기</button></div>
         <div id="recentList"></div>
@@ -331,7 +355,7 @@
     <div class="user"><button class="btn small" id="histBack">게임으로</button></div>
   </div>
   <div class="page-wrap">
-    <h2>전적</h2>
+    <h2 id="histTitle">전적</h2>
     <div class="summary" id="histSummary"></div>
     <div class="records"><div id="histList"></div></div>
   </div>
@@ -844,11 +868,14 @@ class LocalBackend {
     rec.id = 'g_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); rec.created_at = new Date().toISOString(); rec.owner = this.user.id;
     games.push(rec); this._set('mg_games', games); return rec;
   }
-  async listGames(limit){
-    const games = this._get('mg_games', []).filter(g => g.owner === this.user.id);
+  async listGames(limit, opponent){
+    let games = this._get('mg_games', []).filter(g => g.owner === this.user.id);
+    if(opponent) games = games.filter(g => g.opponent === opponent);
     games.sort((a,b) => (a.created_at < b.created_at ? 1 : -1));
     return limit ? games.slice(0, limit) : games;
   }
+  // 로컬 모드에는 친구·온라인 대국이 없다
+  get online(){ return false; }
 }
 
 class SupabaseBackend {
@@ -885,15 +912,73 @@ class SupabaseBackend {
     if(error) throw new Error(error.message);
     return data;
   }
-  async listGames(limit){
+  async listGames(limit, opponent){
     let q = this.sb.from('games').select('*').eq('owner', this.user.id).order('created_at', {ascending:false});
+    if(opponent) q = q.eq('opponent', opponent);
     if(limit) q = q.limit(limit);
     const {data, error} = await q; if(error) throw new Error(error.message);
     return data || [];
   }
+  get online(){ return true; }
+
+  /* ---- 접속 표시 ---- */
+  async heartbeat(){ if(this.user) await this.sb.from('profiles').update({last_seen: new Date().toISOString()}).eq('id', this.user.id); }
+
+  /* ---- 친구 ---- */
+  // [{friendshipId, id, nickname, online, status: 'accepted' | 'in' | 'out'}]
+  async listFriends(){
+    const me = this.user.id;
+    const {data, error} = await this.sb.from('friendships').select('id,status,requester,addressee,req:profiles!friendships_requester_fkey(id,nickname,last_seen),adr:profiles!friendships_addressee_fkey(id,nickname,last_seen)').or(`requester.eq.${me},addressee.eq.${me}`);
+    if(error) throw new Error(error.message);
+    const cut = Date.now() - 70000;
+    return (data || []).map(f => {
+      const other = f.requester === me ? f.adr : f.req;
+      const status = f.status === 'accepted' ? 'accepted' : (f.addressee === me ? 'in' : 'out');
+      return {friendshipId: f.id, id: other.id, nickname: other.nickname, online: !!other.last_seen && new Date(other.last_seen).getTime() > cut, status};
+    });
+  }
+  async sendFriendRequest(nick){
+    if(nick === this.user.nickname) return {ok:false, error:'나 자신이다.'};
+    const {data:p} = await this.sb.from('profiles').select('id').eq('nickname', nick).maybeSingle();
+    if(!p) return {ok:false, error:'없는 닉네임이다.'};
+    const {error} = await this.sb.from('friendships').insert({requester: this.user.id, addressee: p.id});
+    if(error) return {ok:false, error: /duplicate|unique/i.test(error.message) ? '이미 신청했거나 친구다.' : error.message};
+    return {ok:true};
+  }
+  async respondFriend(friendshipId, accept){
+    if(accept){ const {error} = await this.sb.from('friendships').update({status:'accepted'}).eq('id', friendshipId); if(error) throw new Error(error.message); }
+    else { const {error} = await this.sb.from('friendships').delete().eq('id', friendshipId); if(error) throw new Error(error.message); }
+  }
+
+  /* ---- 온라인 대국 ---- */
+  async createMatch(opponentId, size, timeControl){
+    const row = {black: this.user.id, white: opponentId, size, time_control: timeControl, status:'invited', clock_black: timeControl*1000, clock_white: timeControl*1000};
+    const {data, error} = await this.sb.from('matches').insert(row).select().single();
+    if(error) throw new Error(error.message); return data;
+  }
+  async getMatch(id){ const {data, error} = await this.sb.from('matches').select('*').eq('id', id).maybeSingle(); if(error) throw new Error(error.message); return data; }
+  // 나에게 온 신청과 내가 보낸 신청(대기 중), 진행 중인 대국
+  async listMatches(){
+    const me = this.user.id;
+    const {data, error} = await this.sb.from('matches').select('*').or(`black.eq.${me},white.eq.${me}`).in('status', ['invited','active']).order('created_at', {ascending:false});
+    if(error) throw new Error(error.message); return data || [];
+  }
+  // expect: 이 상태일 때만 갱신 (동시 갱신 충돌 방지)
+  async updateMatch(id, patch, expect){
+    let q = this.sb.from('matches').update({...patch, updated_at: new Date().toISOString()}).eq('id', id);
+    if(expect) q = q.eq('status', expect);
+    const {data, error} = await q.select().maybeSingle();
+    if(error) throw new Error(error.message); return data;
+  }
+  subscribeMatch(id, cb){
+    const ch = this.sb.channel('match-' + id).on('postgres_changes', {event:'UPDATE', schema:'public', table:'matches', filter:`id=eq.${id}`}, p => cb(p.new)).subscribe();
+    return () => { try { this.sb.removeChannel(ch); } catch(e){} };
+  }
+  async nickname(id){ const {data} = await this.sb.from('profiles').select('nickname').eq('id', id).maybeSingle(); return data ? data.nickname : '?'; }
 }
 function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
 async function makeBackend(){
+  if(window.MAGNETIC_BACKEND) return window.MAGNETIC_BACKEND; // 테스트용 주입
   if(SUPABASE_URL && SUPABASE_ANON_KEY){
     try { if(!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'); return new SupabaseBackend(SUPABASE_URL, SUPABASE_ANON_KEY); }
     catch(e){ console.warn('Supabase 로드 실패, 로컬 모드로 동작', e); }
@@ -969,11 +1054,11 @@ function renderUserBox(){
     $('tbSignup').addEventListener('click', () => openAuth('signup'));
   } else {
     box.innerHTML = `<span class="nick">${backend.user.nickname}</span><button class="btn small" id="tbHistory">전적</button><button class="btn small link" id="tbLogout">로그아웃</button>`;
-    $('tbHistory').addEventListener('click', openHistory);
-    $('tbLogout').addEventListener('click', async () => { await backend.signOut(); renderUserBox(); renderRecent(); });
+    $('tbHistory').addEventListener('click', () => openHistory(null));
+    $('tbLogout').addEventListener('click', async () => { if(onlineMatch) leaveOnline(); stopSocial(); await backend.signOut(); renderUserBox(); renderRecent(); });
   }
 }
-function enterGame(){ showScreen('game'); renderUserBox(); renderRecent(); if(!game) startGame(); }
+function enterGame(){ showScreen('game'); renderUserBox(); renderRecent(); if(!game) startGame(); startSocial(); }
 
 /* =====================================================================
    본 게임
@@ -984,8 +1069,10 @@ let gameType = 'play', mode = 'ai', level = '2', humanColor = BLACK;
 let timeControl = 0, clock = {1:0, 2:0}, clockRunning = 0, lastTick = 0;
 let winProb = null, evalPending = false, evalToken = 0, newGameToken = 0;
 const EVAL_OPTS = {iters: 6000, timeMs: 2000};
+let settingsSize = 9;                 // 설정에서 고른 판 크기 (온라인 대국이 끝나면 되돌린다)
+let onlineMatch = null, oppNick = '', matchUnsub = null, matchPoll = 0, socialTimers = [];
 
-function myTurn(){ return !!game && !game.result && !thinking && !isAnimating && (mode==='local' || game.toMove===humanColor); }
+function myTurn(){ return !!game && !game.result && !thinking && !isAnimating && (mode==='local' || game.toMove===humanColor) && !(mode==='online' && (!onlineMatch || onlineMatch.status !== 'active')); }
 function onCellClick(i){
   if(!myTurn() || game.board[i]!==0) return;
   if(IS_HOVER){ selected = -1; commit(i); return; }
@@ -997,6 +1084,7 @@ function onCellLeave(){ if(selected < 0) view.clearPreview(); }
 function commit(cell){
   view.clearPreview(); selected = -1; hintCell = -1; evalToken++; evalPending = false;
   playMove(game, cell); switchClock();
+  if(mode === 'online') pushOnlineMove();
   isAnimating = true; render();
   setTimeout(() => {
     isAnimating = false; render();
@@ -1029,7 +1117,7 @@ function runAITurn(){
 }
 
 function render(){
-  view.sync(game, {hintCell, locked: thinking || isAnimating || (mode==='ai' && game.toMove!==humanColor)});
+  view.sync(game, {hintCell, locked: thinking || isAnimating || (mode!=='local' && game.toMove!==humanColor)});
   if(game.result){
     const w = game.result.winner === BLACK ? '흑' : '백';
     const how = game.result.resigned ? ' (기권)' : game.result.timeout ? ' (시간 초과)' : '!';
@@ -1039,11 +1127,14 @@ function render(){
   $('placedCount').textContent = `${game.plies} / ${game.T.MAX_PLIES}`;
   $('scoreB').textContent = groupSizes(game.board, BLACK, game.T)[0] || 0;
   $('scoreW').textContent = groupSizes(game.board, WHITE, game.T)[0] || 0;
-  $('undoBtn').disabled = thinking || game.moves.length === 0 || isAnimating;
-  $('hintBtn').disabled = thinking || !!game.result || !myTurn() || isAnimating;
+  $('undoBtn').disabled = thinking || game.moves.length === 0 || isAnimating || mode === 'online';
+  $('hintBtn').disabled = thinking || !!game.result || !myTurn() || isAnimating || mode === 'online';
   $('resignBtn').disabled = !!game.result;
+  $('newBtn').disabled = mode === 'online' && !game.result;
+  $('newBtn').textContent = (mode === 'online' && game.result) ? '나가기' : '새 게임';
   $('levelRow').style.display = mode === 'ai' ? 'flex' : 'none';
   $('colorRow').style.display = mode === 'ai' ? 'flex' : 'none';
+  $('vsLine').textContent = mode === 'online' ? `온라인 · ${oppNick} · 나는 ${humanColor===BLACK?'흑':'백'}` : '';
 }
 function renderWinrate(){
   if(gameType !== 'train') return;
@@ -1075,7 +1166,7 @@ function tick(){
     clock[clockRunning] = 0; const loser = clockRunning; clockRunning = 0;
     game.result = { winner: 3 - loser, timeout: true };
     thinking = false; evalToken++; evalPending = false; view.clearPreview(); selected = -1;
-    render(); onGameOver(); return;
+    render(); if(mode === 'online') reportOnlineEnd('timeout', 3 - loser); onGameOver(); return;
   }
   renderClocks();
 }
@@ -1090,6 +1181,7 @@ function showHint(){
   });
 }
 function startGame(){
+  if(mode === 'online'){ leaveOnline(); return; }
   const token = ++newGameToken; evalToken++; evalPending = false; winProb = null;
   const hadStones = !!(game && game.stones.length);
   game = newGame(TB); selected = -1; hintCell = -1; thinking = false; isAnimating = false;
@@ -1114,7 +1206,12 @@ function undo(){
 }
 function resign(){
   if(game.result) return;
-  if(confirm('기권하시겠습니까?')){ game.result = { winner: 3 - game.toMove, resigned: true }; evalToken++; evalPending = false; view.clearPreview(); render(); onGameOver(); }
+  if(confirm('기권하시겠습니까?')){
+    const winner = mode === 'online' ? 3 - humanColor : 3 - game.toMove;
+    game.result = { winner, resigned: true }; evalToken++; evalPending = false; view.clearPreview(); render();
+    if(mode === 'online') reportOnlineEnd('resign', winner);
+    onGameOver();
+  }
 }
 
 /* =====================================================================
@@ -1123,12 +1220,14 @@ function resign(){
 async function onGameOver(){
   if(!game || !game.result || game.saved) return;
   game.saved = true;
-  if(isGuest() || mode !== 'ai') return; // 게스트와 2인(같은 기기) 대전은 저장하지 않는다
+  if(isGuest() || mode === 'local') return; // 게스트와 2인(같은 기기) 대전은 저장하지 않는다
   const rec = {
-    mode: 'ai', size: game.T.N, time_control: timeControl, ai_level: Number(level), my_color: humanColor,
+    mode, size: game.T.N, time_control: timeControl, ai_level: mode === 'ai' ? Number(level) : null, my_color: humanColor,
     winner: game.result.winner, reason: game.result.resigned ? 'resign' : game.result.timeout ? 'timeout' : 'end',
     black_score: groupSizes(game.board, BLACK, game.T).slice(0, 3), white_score: groupSizes(game.board, WHITE, game.T).slice(0, 3),
-    moves: game.moves.map(m => m.cell).join(','), plies: game.plies, opponent_name: 'AI ' + level + '단계'
+    moves: game.moves.map(m => m.cell).join(','), plies: game.plies,
+    opponent: mode === 'online' ? (onlineMatch.black === backend.user.id ? onlineMatch.white : onlineMatch.black) : null,
+    opponent_name: mode === 'online' ? oppNick : 'AI ' + level + '단계'
   };
   try { await backend.saveGame(rec); renderRecent(); } catch(e){ toast('전적 저장 실패: ' + e.message); }
 }
@@ -1156,12 +1255,15 @@ async function renderRecent(){
     list.forEach(r => box.appendChild(recordRow(r)));
   } catch(e){ box.innerHTML = `<div class="empty">불러오기 실패: ${e.message}</div>`; }
 }
-async function openHistory(){
+let histFriend = null;
+async function openHistory(friend){
   if(isGuest()) return;
+  if(friend !== undefined) histFriend = friend || null;
   showScreen('history');
+  $('histTitle').textContent = histFriend ? `vs ${histFriend.nickname}` : '전적';
   const box = $('histList'); box.innerHTML = '<div class="empty">불러오는 중…</div>';
   try {
-    const list = await backend.listGames(0);
+    const list = await backend.listGames(0, histFriend ? histFriend.id : undefined);
     const wins = list.filter(r => r.winner === r.my_color).length;
     $('histSummary').innerHTML = `<div><b>${list.length}</b>경기</div><div><b>${wins}</b>승</div><div><b>${list.length - wins}</b>패</div><div><b>${list.length ? Math.round(wins/list.length*100) : 0}%</b>승률</div>`;
     box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">아직 저장된 경기가 없다.</div>'; return; }
@@ -1204,13 +1306,175 @@ function toggleAutoplay(){
 }
 
 /* =====================================================================
+   친구 · 접속 표시 · 대국 신청
+   ===================================================================== */
+function startSocial(){
+  stopSocial();
+  if(isGuest() || !backend.online){ $('friendsBox').style.display = 'none'; $('inviteBox').style.display = 'none'; return; }
+  $('friendsBox').style.display = '';
+  const beat = () => backend.heartbeat().catch(() => {});
+  beat(); renderFriends(); pollMatches();
+  socialTimers = [setInterval(beat, 30000), setInterval(renderFriends, 20000), setInterval(pollMatches, 4000)];
+}
+function stopSocial(){ socialTimers.forEach(clearInterval); socialTimers = []; }
+
+async function renderFriends(){
+  if(isGuest() || !backend.online) return;
+  const list = $('friendList'), msg = $('friendMsg');
+  try {
+    const fr = await backend.listFriends();
+    list.innerHTML = '';
+    const inReq = fr.filter(f => f.status === 'in'), outReq = fr.filter(f => f.status === 'out'), acc = fr.filter(f => f.status === 'accepted');
+    for(const f of inReq){
+      const d = document.createElement('div'); d.className = 'friend';
+      d.innerHTML = `<span class="st"></span><span class="name">${f.nickname}<small>친구 신청</small></span><button class="btn small primary">수락</button><button class="btn small">거절</button>`;
+      const [ok, no] = d.querySelectorAll('button');
+      ok.addEventListener('click', async () => { await backend.respondFriend(f.friendshipId, true); renderFriends(); });
+      no.addEventListener('click', async () => { await backend.respondFriend(f.friendshipId, false); renderFriends(); });
+      list.appendChild(d);
+    }
+    for(const f of outReq){
+      const d = document.createElement('div'); d.className = 'friend';
+      d.innerHTML = `<span class="st"></span><span class="name">${f.nickname}<small>수락 대기</small></span><button class="btn small">취소</button>`;
+      d.querySelector('button').addEventListener('click', async () => { await backend.respondFriend(f.friendshipId, false); renderFriends(); });
+      list.appendChild(d);
+    }
+    acc.sort((a,b) => (b.online - a.online) || a.nickname.localeCompare(b.nickname));
+    for(const f of acc){
+      const d = document.createElement('div'); d.className = 'friend';
+      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name">${f.nickname}</span><button class="btn small">전적</button><button class="btn small primary">대국</button>`;
+      const [h2h, play] = d.querySelectorAll('button');
+      h2h.addEventListener('click', () => openHistory(f));
+      play.addEventListener('click', () => inviteFriend(f));
+      list.appendChild(d);
+    }
+    msg.textContent = fr.length ? '' : '닉네임을 입력해 친구를 추가한다.';
+  } catch(e){ msg.textContent = '친구 목록 오류: ' + e.message; }
+}
+async function addFriend(){
+  const nick = $('friendNick').value.trim(); if(!nick) return;
+  const r = await backend.sendFriendRequest(nick);
+  if(!r.ok){ toast(r.error); return; }
+  $('friendNick').value = ''; toast('친구 신청을 보냈다.'); renderFriends();
+}
+
+async function inviteFriend(f){
+  if(onlineMatch && onlineMatch.status === 'active'){ toast('진행 중인 대국이 있다.'); return; }
+  try {
+    const m = await backend.createMatch(f.id, settingsSize, timeControl);
+    oppNick = f.nickname; showInvite(m);
+  } catch(e){ toast('신청 실패: ' + e.message); }
+}
+// 4초마다: 나에게 온 신청, 내가 보낸 신청의 상태, 진행 중인 대국
+async function pollMatches(){
+  if(isGuest() || !backend.online) return;
+  let ms; try { ms = await backend.listMatches(); } catch(e){ return; }
+  const me = backend.user.id;
+  const active = ms.find(m => m.status === 'active');
+  if(active){
+    if(!onlineMatch || onlineMatch.id !== active.id){ if(!oppNick || !onlineMatch) oppNick = await backend.nickname(active.black === me ? active.white : active.black); startOnlineGame(active); }
+    return;
+  }
+  if(onlineMatch && onlineMatch.status === 'active') return; // 목록에 없어도 구독으로 처리
+  const inv = ms.find(m => m.status === 'invited');
+  if(!inv){ $('inviteBox').style.display = 'none'; return; }
+  if(inv.black === me){ showInvite(inv); }
+  else { oppNick = await backend.nickname(inv.black); showIncoming(inv); }
+}
+function showInvite(m){
+  const b = $('inviteBox'); b.style.display = ''; b.className = 'invite';
+  b.innerHTML = `<span class="grow">${oppNick} 기다리는 중 · ${m.size}×${m.size} · ${m.time_control ? m.time_control/60 + '분' : '시간 없음'}</span><button class="btn small">취소</button>`;
+  b.querySelector('button').addEventListener('click', async () => { await backend.updateMatch(m.id, {status:'cancelled'}, 'invited'); b.style.display = 'none'; });
+}
+function showIncoming(m){
+  const b = $('inviteBox'); b.style.display = ''; b.className = 'invite';
+  b.innerHTML = `<span class="grow">${oppNick}의 대국 신청 · ${m.size}×${m.size} · ${m.time_control ? m.time_control/60 + '분' : '시간 없음'}</span><button class="btn small primary">수락</button><button class="btn small">거절</button>`;
+  const [ok, no] = b.querySelectorAll('button');
+  ok.addEventListener('click', async () => { const r = await backend.updateMatch(m.id, {status:'active', last_move_at: null}, 'invited'); b.style.display = 'none'; if(r) startOnlineGame(r); else toast('신청이 취소됐다.'); });
+  no.addEventListener('click', async () => { await backend.updateMatch(m.id, {status:'declined'}, 'invited'); b.style.display = 'none'; });
+}
+
+/* =====================================================================
+   온라인 대국 진행
+   ===================================================================== */
+function startOnlineGame(m){
+  if(onlineMatch && onlineMatch.id === m.id) return;
+  if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
+  $('inviteBox').style.display = 'none';
+  onlineMatch = m; mode = 'online'; evalToken++; evalPending = false; winProb = null; thinking = false; isAnimating = false; selected = -1; hintCell = -1;
+  humanColor = m.black === backend.user.id ? BLACK : WHITE;
+  timeControl = m.time_control || 0;
+  initBoardData(m.size); view.build(N); view.clear();
+  game = newGame(TB);
+  for(const c of String(m.moves || '').split(',').filter(x => x !== '').map(Number)) playMove(game, c);
+  syncClocksFrom(m);
+  document.body.classList.add('online-game'); document.body.classList.toggle('no-clock', timeControl === 0);
+  render(); view.effect('대국 시작', `vs ${oppNick} · ${humanColor===BLACK?'흑':'백'}`);
+  if(m.status === 'finished') finishFromMatch(m);
+  matchUnsub = backend.subscribeMatch(m.id, applyRemote);
+  matchPoll = setInterval(async () => { if(!onlineMatch) return; try { const r = await backend.getMatch(onlineMatch.id); if(r) applyRemote(r); } catch(e){} }, 3000);
+}
+function syncClocksFrom(m){
+  clock = {1: m.clock_black ?? timeControl*1000, 2: m.clock_white ?? timeControl*1000};
+  if(timeControl && game.plies > 0 && !game.result && m.last_move_at){
+    const elapsed = Date.now() - new Date(m.last_move_at).getTime();
+    clock[game.toMove] = Math.max(0, clock[game.toMove] - elapsed);
+    clockRunning = game.toMove; lastTick = Date.now();
+  } else clockRunning = 0;
+  renderClocks();
+}
+function applyRemote(m){
+  if(!onlineMatch || m.id !== onlineMatch.id) return;
+  onlineMatch = m;
+  const cells = String(m.moves || '').split(',').filter(x => x !== '').map(Number);
+  if(cells.length > game.plies && !game.result){
+    for(let i = game.plies; i < cells.length; i++){ playMove(game, cells[i]); }
+    isAnimating = true; render();
+    setTimeout(() => { isAnimating = false; render(); if(game.result) onGameOver(); }, 1000);
+  }
+  if(m.status === 'active') syncClocksFrom(m);
+  if(m.status === 'finished') finishFromMatch(m);
+  if(m.status === 'cancelled' || m.status === 'declined'){ toast('대국이 취소됐다.'); leaveOnline(); }
+}
+function finishFromMatch(m){
+  if(!game.result){
+    game.result = { winner: m.winner, resigned: m.reason === 'resign', timeout: m.reason === 'timeout' };
+    clockRunning = 0; render(); onGameOver();
+  }
+  if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
+}
+async function pushOnlineMove(){
+  const m = onlineMatch; if(!m) return;
+  const patch = { moves: game.moves.map(x => x.cell).join(','), plies: game.plies, turn: game.toMove, last_move_at: new Date().toISOString() };
+  if(timeControl){ patch.clock_black = Math.max(0, Math.round(clock[BLACK])); patch.clock_white = Math.max(0, Math.round(clock[WHITE])); }
+  if(game.result){ patch.status = 'finished'; patch.winner = game.result.winner; patch.reason = 'end'; }
+  try { const r = await backend.updateMatch(m.id, patch, 'active'); if(r) onlineMatch = r; }
+  catch(e){ toast('수 전송 실패: ' + e.message); }
+}
+async function reportOnlineEnd(reason, winner){
+  const m = onlineMatch; if(!m) return;
+  try { const r = await backend.updateMatch(m.id, {status:'finished', winner, reason, clock_black: Math.max(0, Math.round(clock[BLACK])), clock_white: Math.max(0, Math.round(clock[WHITE]))}, 'active'); if(r) onlineMatch = r; }
+  catch(e){}
+  if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
+}
+function leaveOnline(){
+  if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
+  onlineMatch = null; oppNick = ''; mode = 'ai'; document.body.classList.remove('online-game');
+  const modeBtns = $('modeSeg').querySelectorAll('button'); modeBtns.forEach(b => b.classList.toggle('on', b.dataset.v === 'ai'));
+  humanColor = Number($('colorSeg').querySelector('button.on').dataset.v);
+  timeControl = Number($('timeSeg').querySelector('button.on').dataset.v);
+  initBoardData(settingsSize); view.build(N);
+  game = null; startGame();
+}
+
+/* =====================================================================
    컨트롤 바인딩, 튜토리얼, 부팅
    ===================================================================== */
 function bindSeg(id, onPick){
   const el = $(id);
   el.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { el.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn)); onPick(btn.dataset.v); }));
 }
-bindSeg('sizeSeg', v => { initBoardData(Number(v)); view.build(N); startGame(); });
+bindSeg('sizeSeg', v => { settingsSize = Number(v); initBoardData(settingsSize); view.build(N); startGame(); });
 bindSeg('typeSeg', v => { gameType = v; document.body.classList.toggle('play-mode', v === 'play'); document.body.classList.toggle('train-mode', v === 'train'); hintCell = -1; render(); if(v === 'train' && !thinking && !isAnimating) requestEval(); });
 bindSeg('timeSeg', v => { timeControl = Number(v); startGame(); });
 bindSeg('modeSeg', v => { mode = v; startGame(); });
@@ -1220,7 +1484,9 @@ $('newBtn').addEventListener('click', startGame);
 $('undoBtn').addEventListener('click', undo);
 $('hintBtn').addEventListener('click', showHint);
 $('resignBtn').addEventListener('click', resign);
-$('moreBtn').addEventListener('click', openHistory);
+$('moreBtn').addEventListener('click', () => openHistory(null));
+$('friendAddBtn').addEventListener('click', addFriend);
+$('friendNick').addEventListener('keydown', e => { if(e.key === 'Enter') addFriend(); });
 $('histBack').addEventListener('click', () => showScreen('game'));
 $('replayBack').addEventListener('click', () => { stopAutoplay(); openHistory(); });
 $('rpFirst').addEventListener('click', () => { stopAutoplay(); stepTo(0); });
