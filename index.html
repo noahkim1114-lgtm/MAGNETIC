@@ -50,15 +50,22 @@
   .auth-wrap .err { color: #ff7a7a; font-size: 13px; min-height: 1.4em; }
   .auth-wrap .form .btn { padding: 13px; }
 
-  /* ---------- 게임 화면 ---------- */
-  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid #1a1a1a; }
-  .topbar .brand { font-size: 16px; cursor: pointer; }
+  /* ---------- 상단 바 (플레이 · 전적 · 게임 규칙 | 닉네임 · 로그아웃) ---------- */
+  .topbar { display: none; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #1a1a1a; }
+  .topbar.show { display: flex; }
+  .topbar .left { display: flex; align-items: center; gap: 6px; }
+  .topbar .brand { font-size: 16px; cursor: pointer; margin-right: 14px; }
+  .topbar .nav { background: none; border: 0; color: var(--muted); padding: 8px 12px; border-radius: 4px; font-weight: 600; font-size: 14px; }
+  .topbar .nav:hover { color: #fff; background: #1a1a1a; }
+  .topbar .nav.on { color: #fff; background: #222; }
   .topbar .user { display: flex; align-items: center; gap: 8px; font-size: 14px; }
   .topbar .user .nick { font-weight: 700; margin-right: 6px; }
 
-  .app { max-width: 1040px; margin: 0 auto; padding: 20px 20px 90px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
-  .board-col { flex: 1.4; min-width: 360px; display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
-  .panel-col { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 22px; }
+  /* ---------- 3단 배치: 왼쪽 설정 · 가운데 판 · 오른쪽 친구 ---------- */
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr) 260px; gap: 24px; max-width: 1280px; margin: 0 auto; padding: 20px; align-items: start; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .col.center { gap: 12px; }
   .status-box { display: flex; justify-content: space-between; align-items: center; }
   .turn-text { font-size: 22px; font-weight: bold; }
   .winrate-text { font-size: 16px; font-weight: 600; color: var(--accent); min-height: 24px; }
@@ -100,10 +107,10 @@
   .ghost.place .disc { opacity: 0.8; box-shadow: 0 0 0 2px var(--accent); }
   .stone.will-move .disc { opacity: 0.5; transform: scale(0.85); transition: transform 0.2s, opacity 0.2s; }
 
-  .control-group { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
-  .control-group .label { width: 70px; font-size: 14px; color: var(--muted); }
-  .seg { display: inline-flex; border: 1px solid #333; border-radius: 4px; overflow: hidden; background: #000; }
-  .seg button { background: transparent; border: 0; padding: 8px 14px; font-size: 14px; color: #777; font-weight: 500; }
+  .control-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .control-group .label { font-size: 12px; color: var(--muted); }
+  .seg { display: flex; border: 1px solid #333; border-radius: 4px; overflow: hidden; background: #000; }
+  .seg button { background: transparent; border: 0; padding: 7px 10px; font-size: 13px; color: #777; font-weight: 500; flex: 1; }
   .seg button:not(:first-child) { border-left: 1px solid #333; }
   .seg button.on { background: #333; color: #fff; font-weight: bold; }
   .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
@@ -132,8 +139,6 @@
   .score-item span { display: block; font-size: 28px; font-weight: 800; margin-top: 4px; }
   body.play-mode .train-only { display: none !important; }
 
-  .rules-fab { position: fixed; right: 20px; bottom: 20px; z-index: 50; padding: 10px 18px; border-radius: 24px; background: #222; border: 1px solid #444; color: #eee; font-weight: 600; font-size: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.6); }
-  .rules-fab:hover { background: #333; }
 
   .board .flash { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,.6), rgba(255,255,255,0) 70%); animation: flashOut .8s ease-out forwards; pointer-events: none; z-index: 6; }
   @keyframes flashOut { from { opacity: 1; transform: scale(.6); } to { opacity: 0; transform: scale(1.5); } }
@@ -154,8 +159,10 @@
   .rec .desc small { display: block; color: var(--muted); font-size: 11px; }
   .rec .score { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 
-  /* ---------- 친구 ---------- */
-  .friends .addrow { display: flex; gap: 8px; margin-bottom: 10px; }
+  /* ---------- 친구 (오른쪽 고정) ---------- */
+  .friends { min-height: 420px; }
+  .friends .head { margin-bottom: 10px; }
+  .friends .addrow { display: flex; gap: 8px; margin-bottom: 12px; }
   .friends .addrow input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 14px; }
   .friend { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 6px; font-size: 14px; }
   .friend:hover { background: #1a1a1a; }
@@ -171,19 +178,20 @@
   .vs-line { font-size: 13px; color: var(--muted); }
   .page-wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 80px; }
   .page-wrap h2 { margin: 0 0 14px; }
+  .page-wrap .filter { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .page-wrap .filter .seg { display: inline-flex; }
+  .page-wrap .filter .seg button { flex: none; padding: 7px 14px; }
   .summary { display: flex; gap: 18px; margin-bottom: 16px; font-size: 14px; color: var(--muted); }
   .summary b { color: #fff; font-size: 18px; margin-right: 4px; }
 
   /* ---------- 돌려보기 ---------- */
-  .replay { max-width: 1040px; margin: 0 auto; padding: 24px 20px 80px; display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
-  .replay .left { flex: 1.4; min-width: 360px; }
-  .replay .right { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 14px; }
-  .replay .ctrl { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
-  .replay .ctrl .btn { padding: 10px 14px; }
-  .replay .ctrl .counter { margin-left: auto; font-family: ui-monospace, Menlo, monospace; color: var(--muted); }
-  .replay .info { background: var(--panel); border: 1px solid #333; border-radius: 6px; padding: 14px 16px; font-size: 14px; }
-  .replay .info div { margin: 3px 0; }
-  .replay .info .k { color: var(--muted); display: inline-block; width: 70px; }
+  .ctrl { display: flex; gap: 8px; align-items: center; }
+  .ctrl .btn { padding: 10px 14px; }
+  .ctrl .counter { margin-left: auto; font-family: ui-monospace, Menlo, monospace; color: var(--muted); }
+  .info { background: var(--panel); border: 1px solid #333; border-radius: 6px; padding: 14px 16px; font-size: 14px; }
+  .info div { margin: 3px 0; }
+  .info .k { color: var(--muted); display: inline-block; width: 70px; }
+  .info .big { font-size: 18px; font-weight: 700; color: var(--accent); }
 
   .toast { position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity .25s; pointer-events: none; }
   .toast.show { opacity: 1; }
@@ -245,35 +253,25 @@
   </div>
 </div>
 
+<!-- ================= 상단 바 ================= -->
+<div class="topbar" id="topbar">
+  <div class="left">
+    <div class="brand marble" id="brandHome">MAGNETIC</div>
+    <button class="nav" id="navPlay">플레이</button>
+    <button class="nav" id="navHistory">전적</button>
+    <button class="nav" id="tutorialBtn">게임 규칙</button>
+  </div>
+  <div class="user" id="userBox"></div>
+</div>
+
 <!-- ================= 게임 화면 ================= -->
 <div class="screen" id="screen-game">
-  <div class="topbar">
-    <div class="brand marble" id="brandHome">MAGNETIC</div>
-    <div class="user" id="userBox"></div>
-  </div>
-  <div class="app">
-    <div class="board-col">
-      <div id="inviteBox" style="display:none"></div>
-      <div class="status-box">
-        <div id="turnBox" class="turn-text">흑 차례</div>
-        <div id="winrateBox" class="winrate-text train-only">흑 — · 백 —</div>
-      </div>
-      <div class="vs-line" id="vsLine"></div>
-      <div class="clock-row top"><div class="who"><span class="dot w"></span>백</div><div class="clock w" id="clockW">0:00</div></div>
-      <div class="board-row">
-        <div class="eval-bar train-only" id="evalBar"><div class="fill" id="evalFill"></div><div class="lbl top" id="evalTop">—</div><div class="lbl bottom" id="evalBottom">—</div></div>
-        <div class="board" id="board"></div>
-      </div>
-      <div class="clock-row bottom"><div class="who"><span class="dot b"></span>흑</div><div class="clock b" id="clockB">0:00</div></div>
-      <div id="placedCount" style="color:var(--muted); font-size:13px; text-align:right;">0 / 80</div>
-    </div>
-
-    <div class="panel-col">
+  <div class="layout">
+    <div class="col">
       <div class="score-card">
         <div class="score-item" style="color: #fff;">흑 최대 무리 <span id="scoreB">0</span></div>
         <div class="score-item" style="color: #aaa;">백 최대 무리 <span id="scoreW">0</span></div>
       </div>
-
       <div>
         <div class="control-group">
           <div class="label">보드 크기</div>
@@ -325,51 +323,68 @@
           </div>
         </div>
       </div>
-
       <div class="action-grid">
         <button class="btn primary" id="newBtn">새 게임</button>
         <button class="btn" id="resignBtn">기권</button>
         <button class="btn train-only" id="undoBtn">무르기</button>
         <button class="btn train-only" id="hintBtn">힌트 보기</button>
       </div>
+    </div>
 
-      <div class="records friends" id="friendsBox" style="display:none">
-        <div class="head"><b>친구</b></div>
-        <div class="addrow"><input id="friendNick" maxlength="10" placeholder="닉네임"><button class="btn small" id="friendAddBtn">추가</button></div>
+    <div class="col center">
+      <div id="inviteBox" style="display:none"></div>
+      <div class="status-box">
+        <div id="turnBox" class="turn-text">흑 차례</div>
+        <div id="winrateBox" class="winrate-text train-only">흑 — · 백 —</div>
+      </div>
+      <div class="vs-line" id="vsLine"></div>
+      <div class="clock-row top"><div class="who"><span class="dot w"></span>백</div><div class="clock w" id="clockW">0:00</div></div>
+      <div class="board-row">
+        <div class="eval-bar train-only" id="evalBar"><div class="fill" id="evalFill"></div><div class="lbl top" id="evalTop">—</div><div class="lbl bottom" id="evalBottom">—</div></div>
+        <div class="board" id="board"></div>
+      </div>
+      <div class="clock-row bottom"><div class="who"><span class="dot b"></span>흑</div><div class="clock b" id="clockB">0:00</div></div>
+      <div id="placedCount" style="color:var(--muted); font-size:13px; text-align:right;">0 / 80</div>
+    </div>
+
+    <div class="col">
+      <div class="records friends" id="friendsBox">
+        <div class="head"><b>친구</b><span id="friendCount" style="color:var(--muted);font-size:12px"></span></div>
+        <div class="addrow"><input id="friendNick" maxlength="10" placeholder="닉네임으로 친구 추가"><button class="btn small" id="friendAddBtn">추가</button></div>
         <div id="friendList"></div>
         <div class="empty" id="friendMsg"></div>
-      </div>
-
-      <div class="records" id="recordsBox">
-        <div class="head"><b>최근 5경기</b><button class="btn small ghost" id="moreBtn">더보기</button></div>
-        <div id="recentList"></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ================= 전체 전적 ================= -->
+<!-- ================= 전적 ================= -->
 <div class="screen" id="screen-history">
-  <div class="topbar">
-    <div class="brand marble" id="brandHome2">MAGNETIC</div>
-    <div class="user"><button class="btn small" id="histBack">게임으로</button></div>
-  </div>
   <div class="page-wrap">
     <h2 id="histTitle">전적</h2>
+    <div class="filter"><div class="seg" id="histSeg"><button data-v="all" class="on">전체</button><button data-v="online">플레이어</button><button data-v="ai">AI</button></div></div>
     <div class="summary" id="histSummary"></div>
     <div class="records"><div id="histList"></div></div>
   </div>
 </div>
 
-<!-- ================= 돌려보기 ================= -->
+<!-- ================= 돌려보기 (분석) ================= -->
 <div class="screen" id="screen-replay">
-  <div class="topbar">
-    <div class="brand marble" id="brandHome3">MAGNETIC</div>
-    <div class="user"><button class="btn small" id="replayBack">전적으로</button></div>
-  </div>
-  <div class="replay">
-    <div class="left">
-      <div class="board" id="replayBoard"></div>
+  <div class="layout">
+    <div class="col">
+      <button class="btn" id="replayBack">← 전적</button>
+      <div class="info" id="rpInfo"></div>
+      <div class="info" id="rpMove"></div>
+    </div>
+    <div class="col center">
+      <div class="status-box">
+        <div class="turn-text" id="rpTurn">흑 차례</div>
+        <div class="winrate-text" id="rpWinrate">흑 — · 백 —</div>
+      </div>
+      <div class="board-row">
+        <div class="eval-bar" id="rpEvalBar"><div class="fill" id="rpEvalFill"></div><div class="lbl top" id="rpEvalTop">—</div><div class="lbl bottom" id="rpEvalBottom">—</div></div>
+        <div class="board" id="replayBoard"></div>
+      </div>
       <div class="ctrl">
         <button class="btn" id="rpFirst" title="처음">⏮</button>
         <button class="btn" id="rpPrev" title="이전 수">◀</button>
@@ -379,18 +394,16 @@
         <span class="counter" id="rpCounter">0 / 0</span>
       </div>
     </div>
-    <div class="right">
-      <div class="info" id="rpInfo"></div>
+    <div class="col">
       <div class="score-card">
         <div class="score-item" style="color: #fff;">흑 최대 무리 <span id="rpScoreB">0</span></div>
         <div class="score-item" style="color: #aaa;">백 최대 무리 <span id="rpScoreW">0</span></div>
       </div>
-      <div class="info" id="rpMove"></div>
+      <div class="info" id="rpAnalysis"></div>
     </div>
   </div>
 </div>
 
-<button class="rules-fab" id="tutorialBtn">게임 규칙</button>
 <div class="toast" id="toast"></div>
 
 <!-- 튜토리얼 모달 -->
@@ -695,25 +708,27 @@ function undoMove(game){
    ===================================================================== */
 let _rs = 0x2545F491;
 function rnd(){ _rs^=_rs<<13; _rs>>>=0; _rs^=_rs>>>17; _rs^=_rs<<5; _rs>>>=0; return _rs/4294967296; }
-function rollout(board, plies, toMove){
+function rollout(board, plies, toMove, T){
   const b = board.slice(); let p = toMove;
-  while(plies < MAX_PLIES){
-    let n=0; for(let i=0; i<CELLS; i++) if(b[i]===0) _emp[n++]=i;
-    applyMove(b, _emp[(rnd()*n)|0], p); plies++; p=3-p;
+  while(plies < T.MAX_PLIES){
+    let n=0; for(let i=0; i<T.CELLS; i++) if(b[i]===0) _emp[n++]=i;
+    applyMove(b, _emp[(rnd()*n)|0], p, T); plies++; p=3-p;
   }
-  return finalWinner(b);
+  return finalWinner(b, T);
 }
+// opts.T: 판 표 (없으면 본 게임 표). 돌려보기 분석은 자기 판 표를 넘긴다.
 function mctsChooseAsync(board, plies, toMove, opts, callback){
+  const T = opts.T || TB;
   const iters = opts.iters, timeMs = opts.timeMs; const start = Date.now();
   const root = {board, plies, mover: 3-toMove, n:0, w:0, children:null, result:0};
-  const scratch = new Int8Array(CELLS);
+  const scratch = new Int8Array(T.CELLS);
   function expand(node){
     const p = 3-node.mover; const kids = [];
-    for(let i=0; i<CELLS; i++){
+    for(let i=0; i<T.CELLS; i++){
       if(node.board[i]!==0) continue;
-      const nb = node.board.slice(); applyMove(nb, i, p);
+      const nb = node.board.slice(); applyMove(nb, i, p, T);
       const ch = {board:nb, plies:node.plies+1, mover:p, move:i, n:0, w:0, children:null, result:0, parent:node};
-      if(ch.plies >= MAX_PLIES) ch.result = finalWinner(nb);
+      if(ch.plies >= T.MAX_PLIES) ch.result = finalWinner(nb, T);
       kids.push(ch);
     }
     node.children = kids;
@@ -736,7 +751,7 @@ function mctsChooseAsync(board, plies, toMove, opts, callback){
       if(!node.result && !node.children && node.n>0) expand(node);
       if(node.children && node.children.length && !node.result) node = node.children[(rnd()*node.children.length)|0];
       let res = node.result;
-      if(!res){ scratch.set(node.board); res = rollout(scratch, node.plies, 3-node.mover); }
+      if(!res){ scratch.set(node.board); res = rollout(scratch, node.plies, 3-node.mover, T); }
       for(let cur=node; cur; cur=cur.parent){ cur.n++; if(res===cur.mover) cur.w++; }
       it++;
     }
@@ -992,8 +1007,10 @@ const $ = id => document.getElementById(id);
 let backend = null;
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
-  $('tutorialBtn').style.display = (name === 'game') ? '' : 'none';
-  if(name !== 'replay') stopAutoplay();
+  $('topbar').classList.toggle('show', name === 'game' || name === 'history' || name === 'replay');
+  $('navPlay').classList.toggle('on', name === 'game');
+  $('navHistory').classList.toggle('on', name === 'history' || name === 'replay');
+  if(name !== 'replay'){ stopAutoplay(); rEvalToken++; }
   try { window.scrollTo(0, 0); } catch(e) {}
 }
 let toastTimer = 0;
@@ -1053,12 +1070,11 @@ function renderUserBox(){
     $('tbLogin').addEventListener('click', () => openAuth('login'));
     $('tbSignup').addEventListener('click', () => openAuth('signup'));
   } else {
-    box.innerHTML = `<span class="nick">${backend.user.nickname}</span><button class="btn small" id="tbHistory">전적</button><button class="btn small link" id="tbLogout">로그아웃</button>`;
-    $('tbHistory').addEventListener('click', () => openHistory(null));
-    $('tbLogout').addEventListener('click', async () => { if(onlineMatch) leaveOnline(); stopSocial(); await backend.signOut(); renderUserBox(); renderRecent(); });
+    box.innerHTML = `<span class="nick">${backend.user.nickname}</span><button class="btn small link" id="tbLogout">로그아웃</button>`;
+    $('tbLogout').addEventListener('click', async () => { if(onlineMatch) leaveOnline(); stopSocial(); await backend.signOut(); renderUserBox(); startSocial(); showScreen('game'); });
   }
 }
-function enterGame(){ showScreen('game'); renderUserBox(); renderRecent(); if(!game) startGame(); startSocial(); }
+function enterGame(){ showScreen('game'); renderUserBox(); if(!game) startGame(); startSocial(); }
 
 /* =====================================================================
    본 게임
@@ -1229,7 +1245,7 @@ async function onGameOver(){
     opponent: mode === 'online' ? (onlineMatch.black === backend.user.id ? onlineMatch.white : onlineMatch.black) : null,
     opponent_name: mode === 'online' ? oppNick : 'AI ' + level + '단계'
   };
-  try { await backend.saveGame(rec); renderRecent(); } catch(e){ toast('전적 저장 실패: ' + e.message); }
+  try { await backend.saveGame(rec); } catch(e){ toast('전적 저장 실패: ' + e.message); }
 }
 const fmtDate = iso => { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 const reasonText = r => r === 'resign' ? '기권' : r === 'timeout' ? '시간 초과' : '';
@@ -1240,39 +1256,37 @@ function recordRow(rec){
   const sb = (rec.black_score||[])[0] || 0, sw = (rec.white_score||[])[0] || 0;
   const div = document.createElement('div'); div.className = 'rec';
   div.innerHTML = `<div class="res ${won?'win':'loss'}">${won?'승':'패'}</div>
-    <div class="desc">${rec.opponent_name || 'AI'} · ${rec.size}×${rec.size} · ${tc} · 나는 ${me}<small>${fmtDate(rec.created_at)} · ${rec.plies}수 ${reasonText(rec.reason)}</small></div>
+    <div class="desc">${rec.opponent_name || 'AI'} · ${rec.size}×${rec.size} · ${tc} · ${me}<small>${fmtDate(rec.created_at)} · ${rec.plies}수 ${reasonText(rec.reason)}</small></div>
     <div class="score">흑 ${sb} : 백 ${sw}</div>`;
   div.addEventListener('click', () => openReplay(rec));
   return div;
 }
-async function renderRecent(){
-  const box = $('recentList');
-  $('recordsBox').style.display = isGuest() ? 'none' : '';
-  if(isGuest()){ box.innerHTML = ''; return; }
-  try {
-    const list = await backend.listGames(5);
-    box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">아직 저장된 경기가 없다.</div>'; return; }
-    list.forEach(r => box.appendChild(recordRow(r)));
-  } catch(e){ box.innerHTML = `<div class="empty">불러오기 실패: ${e.message}</div>`; }
-}
-let histFriend = null;
+let histFriend = null, histFilter = 'all', histCache = [];
 async function openHistory(friend){
-  if(isGuest()) return;
+  if(isGuest()){ openAuth('login'); return; }
   if(friend !== undefined) histFriend = friend || null;
   showScreen('history');
   $('histTitle').textContent = histFriend ? `vs ${histFriend.nickname}` : '전적';
+  $('histSeg').style.display = histFriend ? 'none' : '';
   const box = $('histList'); box.innerHTML = '<div class="empty">불러오는 중…</div>';
-  try {
-    const list = await backend.listGames(0, histFriend ? histFriend.id : undefined);
-    const wins = list.filter(r => r.winner === r.my_color).length;
-    $('histSummary').innerHTML = `<div><b>${list.length}</b>경기</div><div><b>${wins}</b>승</div><div><b>${list.length - wins}</b>패</div><div><b>${list.length ? Math.round(wins/list.length*100) : 0}%</b>승률</div>`;
-    box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">아직 저장된 경기가 없다.</div>'; return; }
-    list.forEach(r => box.appendChild(recordRow(r)));
-  } catch(e){ box.innerHTML = `<div class="empty">불러오기 실패: ${e.message}</div>`; }
+  try { histCache = await backend.listGames(0, histFriend ? histFriend.id : undefined); }
+  catch(e){ box.innerHTML = `<div class="empty">불러오기 실패: ${e.message}</div>`; return; }
+  renderHistory();
+}
+function renderHistory(){
+  const box = $('histList');
+  // 통계는 플레이어 대전만 센다. AI 대전은 기록으로만 남는다.
+  const players = histCache.filter(r => r.mode === 'online');
+  const wins = players.filter(r => r.winner === r.my_color).length;
+  $('histSummary').innerHTML = `<div><b>${players.length}</b>경기</div><div><b>${wins}</b>승</div><div><b>${players.length - wins}</b>패</div><div><b>${players.length ? Math.round(wins/players.length*100) : 0}%</b>승률</div>`;
+  const list = histFriend ? histCache : histCache.filter(r => histFilter === 'all' || r.mode === histFilter);
+  box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">경기가 없다.</div>'; return; }
+  list.forEach(r => box.appendChild(recordRow(r)));
 }
 
 /* ---------- 돌려보기 ---------- */
 let rview = null, rgame = null, rcells = [], rrec = null, autoplayTimer = 0;
+let rEvalToken = 0, rEvalPending = false, rWinProb = null, rBest = -1;
 function openReplay(rec){
   rrec = rec; rcells = String(rec.moves || '').split(',').filter(s => s !== '').map(Number);
   const T = buildTables(rec.size); rgame = newGame(T);
@@ -1286,16 +1300,47 @@ function stepTo(i){
   while(rgame.plies < i){ playMove(rgame, rcells[rgame.plies]); }
   while(rgame.plies > i){ undoMove(rgame); }
   if(rgame.plies === rcells.length && rgame.plies >= rgame.T.MAX_PLIES) rgame.result = {winner: finalWinner(rgame.board, rgame.T)};
-  rview.sync(rgame, {locked: true});
+  else if(rgame.plies === rcells.length && rrec && rrec.reason !== 'end') rgame.result = {winner: rrec.winner, resigned: rrec.reason === 'resign', timeout: rrec.reason === 'timeout'};
+  rBest = -1; rview.sync(rgame, {locked: true});
   $('rpCounter').textContent = `${rgame.plies} / ${rcells.length}`;
   $('rpScoreB').textContent = groupSizes(rgame.board, BLACK, rgame.T)[0] || 0;
   $('rpScoreW').textContent = groupSizes(rgame.board, WHITE, rgame.T)[0] || 0;
   const last = rgame.moves[rgame.moves.length - 1];
   const n = rgame.T.N;
-  $('rpMove').innerHTML = last ? `<div><span class="k">${rgame.plies}수</span>${last.player===BLACK?'흑':'백'} → (${last.cell%n+1}, ${Math.floor(last.cell/n)+1}) · 끌려온 돌 ${last.pulls.length}개</div>` : '<div><span class="k">시작</span>빈 판</div>';
+  $('rpMove').innerHTML = last ? `<div><span class="k">${rgame.plies}수</span>${last.player===BLACK?'흑':'백'} → (${last.cell%n+1}, ${Math.floor(last.cell/n)+1})</div><div><span class="k">끌려옴</span>${last.pulls.length}개</div>` : '<div><span class="k">시작</span>빈 판</div>';
+  if(rgame.result){ const w = rgame.result.winner === BLACK ? '흑' : '백'; $('rpTurn').textContent = `${w} 승리${rgame.result.resigned ? ' (기권)' : rgame.result.timeout ? ' (시간 초과)' : ''}`; }
+  else $('rpTurn').textContent = (rgame.toMove === BLACK ? '흑' : '백') + ' 차례';
   $('rpPrev').disabled = $('rpFirst').disabled = rgame.plies === 0;
   $('rpNext').disabled = $('rpLast').disabled = rgame.plies === rcells.length;
   if(rgame.plies === rcells.length) stopAutoplay();
+  replayEval();
+}
+// 돌려보기 분석: 현재 국면을 차례인 쪽 입장에서 평가해 승률 바와 추천 수를 보여준다
+function replayEval(){
+  const t = ++rEvalToken;
+  if(rgame.result){ rEvalPending = false; rWinProb = rgame.result.winner === BLACK ? 1 : 0; rBest = -1; renderReplayEval(); return; }
+  rEvalPending = true; rWinProb = null; renderReplayEval();
+  mctsChooseAsync(rgame.board, rgame.plies, rgame.toMove, {...EVAL_OPTS, T: rgame.T, isStale: () => t !== rEvalToken}, (r) => {
+    if(t !== rEvalToken) return;
+    rEvalPending = false; rWinProb = rgame.toMove === BLACK ? r.winrate : 1 - r.winrate; rBest = r.move;
+    rview.sync(rgame, {locked: true, hintCell: rBest}); renderReplayEval();
+  });
+}
+function renderReplayEval(){
+  $('rpEvalBar').classList.toggle('pending', rEvalPending);
+  const n = rgame.T.N;
+  if(rWinProb === null){
+    $('rpWinrate').textContent = '계산 중…'; $('rpEvalFill').style.height = '50%'; $('rpEvalTop').textContent = '—'; $('rpEvalBottom').textContent = '—';
+    $('rpAnalysis').innerHTML = '<div><span class="k">승률</span>계산 중…</div>'; return;
+  }
+  const b = rWinProb * 100, w = 100 - b;
+  $('rpWinrate').textContent = `흑 ${b.toFixed(1)}% · 백 ${w.toFixed(1)}%`;
+  $('rpEvalFill').style.height = b + '%'; $('rpEvalTop').textContent = w.toFixed(1) + '%'; $('rpEvalBottom').textContent = b.toFixed(1) + '%';
+  const next = rcells[rgame.plies];
+  let html = `<div><span class="k">흑 승률</span><span class="big">${b.toFixed(1)}%</span></div><div><span class="k">백 승률</span><span class="big">${w.toFixed(1)}%</span></div>`;
+  if(rBest >= 0) html += `<div><span class="k">추천 수</span>(${rBest%n+1}, ${Math.floor(rBest/n)+1})</div>`;
+  if(next !== undefined) html += `<div><span class="k">실제 수</span>(${next%n+1}, ${Math.floor(next/n)+1})${rBest >= 0 ? (next === rBest ? ' · 일치' : '') : ''}</div>`;
+  $('rpAnalysis').innerHTML = html;
 }
 function stopAutoplay(){ if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer = 0; } const b = $('rpPlay'); if(b) b.textContent = '▶ 재생'; }
 function toggleAutoplay(){
@@ -1348,7 +1393,8 @@ async function renderFriends(){
       play.addEventListener('click', () => inviteFriend(f));
       list.appendChild(d);
     }
-    msg.textContent = fr.length ? '' : '닉네임을 입력해 친구를 추가한다.';
+    $('friendCount').textContent = acc.length ? `${acc.filter(f => f.online).length} / ${acc.length}` : '';
+    msg.textContent = '';
   } catch(e){ msg.textContent = '친구 목록 오류: ' + e.message; }
 }
 async function addFriend(){
@@ -1484,10 +1530,11 @@ $('newBtn').addEventListener('click', startGame);
 $('undoBtn').addEventListener('click', undo);
 $('hintBtn').addEventListener('click', showHint);
 $('resignBtn').addEventListener('click', resign);
-$('moreBtn').addEventListener('click', () => openHistory(null));
+$('navPlay').addEventListener('click', () => showScreen('game'));
+$('navHistory').addEventListener('click', () => openHistory(null));
+$('histSeg').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { $('histSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn)); histFilter = btn.dataset.v; renderHistory(); }));
 $('friendAddBtn').addEventListener('click', addFriend);
 $('friendNick').addEventListener('keydown', e => { if(e.key === 'Enter') addFriend(); });
-$('histBack').addEventListener('click', () => showScreen('game'));
 $('replayBack').addEventListener('click', () => { stopAutoplay(); openHistory(); });
 $('rpFirst').addEventListener('click', () => { stopAutoplay(); stepTo(0); });
 $('rpPrev').addEventListener('click', () => { stopAutoplay(); stepTo(rgame.plies - 1); });
@@ -1498,7 +1545,7 @@ document.addEventListener('keydown', e => {
   if(!$('screen-replay').classList.contains('active')) return;
   if(e.key === 'ArrowRight'){ stopAutoplay(); stepTo(rgame.plies + 1); } else if(e.key === 'ArrowLeft'){ stopAutoplay(); stepTo(rgame.plies - 1); } else if(e.key === ' '){ e.preventDefault(); toggleAutoplay(); }
 });
-['brandHome','brandHome2','brandHome3'].forEach(id => $(id).addEventListener('click', () => { renderLanding(); showScreen('landing'); }));
+$('brandHome').addEventListener('click', () => { renderLanding(); showScreen('landing'); });
 $('authBack').addEventListener('click', () => { renderLanding(); showScreen('landing'); });
 $('authSubmit').addEventListener('click', submitAuth);
 $('authPw').addEventListener('keydown', e => { if(e.key === 'Enter') submitAuth(); });
