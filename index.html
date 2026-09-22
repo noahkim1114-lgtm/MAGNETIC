@@ -181,17 +181,35 @@
   .friends #friendList { flex: 1; overflow: auto; min-height: 120px; }
   .friends .addrow { display: flex; gap: 8px; margin-bottom: 12px; }
   .friends .addrow input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 14px; }
-  .friend { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 6px; font-size: 14px; }
+  .friend { display: flex; align-items: center; gap: 10px; padding: 9px 8px; border-radius: 6px; font-size: 14px; flex-wrap: wrap; row-gap: 7px; }
   .friend:hover { background: #1a1a1a; }
   .friend .st { width: 9px; height: 9px; border-radius: 50%; background: #444; flex: none; }
   .friend .st.on { background: #4cd964; box-shadow: 0 0 6px #4cd964; }
   .friend .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .friend .name small { color: var(--muted); margin-left: 6px; font-size: 11px; }
+  .friend .name .memo { color: var(--muted); font-size: 12px; margin-left: 8px; font-weight: 400; }
+  .friend .row2 { flex-basis: 100%; display: flex; gap: 6px; padding-left: 19px; }
+  .friend .row2 .btn.small { flex: 1; padding: 6px 4px; }
   .friend .btn.small { padding: 5px 9px; font-size: 12px; }
   .friend { cursor: pointer; flex-wrap: wrap; }
   .friend.sel { background: #1a1a1a; }
   .friend .badge { background: #e3b04b; color: #000; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
-  .friend .tools { flex-basis: 100%; display: flex; gap: 6px; align-items: center; padding: 6px 0 2px 19px; }
+  .friend .tools { flex-basis: 100%; display: flex; gap: 6px; align-items: center; padding: 0 0 2px 19px; }
+  /* 기보 */
+  .moves { max-height: 320px; overflow: auto; font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .moves table { border-collapse: collapse; width: 100%; }
+  .moves td { padding: 3px 6px; }
+  .moves td.n { color: var(--muted); width: 30px; text-align: right; }
+  .moves .pull { color: var(--accent); font-size: 11px; margin-left: 3px; }
+  /* 경기 종료 창 */
+  .result-box { max-width: 380px; text-align: center; gap: 14px; position: relative; }
+  .result-box .x { position: absolute; right: 12px; top: 8px; background: none; border: 0; color: var(--muted); font-size: 22px; }
+  .result-box .x:hover { color: #fff; }
+  .result-box .rtitle { font-size: 30px; font-weight: 900; letter-spacing: .04em; margin-top: 6px; }
+  .result-box .rtitle.win { color: var(--accent); } .result-box .rtitle.loss { color: #999; } .result-box .rtitle.draw { color: #ddd; }
+  .result-box .rsub { color: var(--muted); font-size: 14px; white-space: pre-line; }
+  .result-box .rbtns { display: flex; gap: 10px; }
+  .result-box .rbtns .btn { flex: 1; padding: 12px; }
   .friend .name { position: relative; }
   .friend .name .memo-mark { color: var(--muted); font-size: 11px; margin-left: 5px; }
   .friend .name[data-memo]:hover::after { content: attr(data-memo); position: absolute; left: 0; top: 100%; margin-top: 4px; background: #222; border: 1px solid #444; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; z-index: 5; }
@@ -321,7 +339,7 @@
         <div class="score-item" style="color: #fff;">흑 최대 무리 <span id="scoreB">0</span></div>
         <div class="score-item" style="color: #aaa;">백 최대 무리 <span id="scoreW">0</span></div>
       </div>
-      <div>
+      <div id="settingsBox">
         <div class="control-group">
           <div class="label">보드 크기</div>
           <div class="seg" id="sizeSeg">
@@ -372,12 +390,11 @@
           </div>
         </div>
       </div>
-      <div class="action-grid">
-        <button class="btn primary" id="newBtn">새 게임</button>
-        <button class="btn" id="resignBtn">기권</button>
-        <button class="btn train-only" id="undoBtn">무르기</button>
-        <button class="btn train-only" id="hintBtn">힌트 보기</button>
+      <div class="records" id="movesBox" style="display:none">
+        <div class="head"><b>기보</b></div>
+        <div class="moves" id="moveList"></div>
       </div>
+      <div class="action-grid" id="actionGrid"></div>
     </div>
 
     <div class="board-row g-board">
@@ -452,6 +469,20 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- 경기 종료 창 -->
+<div id="resultModal" class="modal-overlay">
+  <div class="modal-content result-box">
+    <button class="x" id="resultClose">✕</button>
+    <div class="rtitle" id="resultTitle"></div>
+    <div class="rsub" id="resultSub"></div>
+    <div class="rbtns">
+      <button class="btn" id="resultAnalyze">게임 분석</button>
+      <button class="btn primary" id="resultRematch">재대결</button>
+    </div>
+    <div class="empty" id="resultMsg"></div>
+  </div>
+</div>
+
 <!-- 튜토리얼 모달 -->
 <div id="tutorialModal" class="modal-overlay">
   <div class="modal-content">
@@ -509,7 +540,7 @@
 /* =====================================================================
    설정: Supabase 프로젝트 정보. 비워 두면 브라우저 안에서만 저장되는 로컬 모드로 동작한다.
    ===================================================================== */
-const APP_VERSION = 'v1.6';
+const APP_VERSION = 'v1.7';
 const SUPABASE_URL = 'https://gjmwxwkxvyzzdpksgajp.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_ukk7OMvAgfM6qLhhODINIw_U7CD5QXI';
 
@@ -1185,6 +1216,8 @@ const EVAL_OPTS = {iters: 2000, timeMs: 1500};   // 승률 표시·표본 수집
 let settingsSize = 9;                 // 설정에서 고른 판 크기 (온라인 대국이 끝나면 되돌린다)
 let onlineMatch = null, oppNick = '', matchUnsub = null, matchPoll = 0, socialTimers = [];
 let friendsCache = [], notes = {}, unread = {}, selectedFriend = null, chatWith = null, chatMsgs = [], msgUnsub = null;
+let pendingReq = null; let reqAcked = false;     // 내가 보낸 온라인 요청: 'undo' | 'draw' | null
+let shownReq = null;       // 상대가 보낸 요청을 화면에 띄웠는지
 
 function myTurn(){ return !!game && !game.result && !thinking && !isAnimating && (mode==='local' || game.toMove===humanColor) && !(mode==='online' && (!onlineMatch || onlineMatch.status !== 'active')); }
 function onCellClick(i){
@@ -1232,23 +1265,66 @@ function runAITurn(){
 function render(){
   view.sync(game, {hintCell, locked: thinking || isAnimating || (mode!=='local' && game.toMove!==humanColor)});
   if(game.result){
-    const w = game.result.winner === BLACK ? '흑' : '백';
-    const how = game.result.resigned ? ' (기권)' : game.result.timeout ? ' (시간 초과)' : '!';
-    $('turnBox').textContent = `${w} 승리${how}`; $('turnBox').style.color = 'var(--accent)'; clockRunning = 0;
+    $('turnBox').textContent = resultText(game.result); $('turnBox').style.color = 'var(--accent)'; clockRunning = 0;
   } else { $('turnBox').textContent = (game.toMove===BLACK ? '흑' : '백') + ' 차례'; $('turnBox').style.color = '#fff'; }
   renderWinrate(); renderClocks();
   $('placedCount').textContent = `${game.plies} / ${game.T.MAX_PLIES}`;
   $('scoreB').textContent = groupSizes(game.board, BLACK, game.T)[0] || 0;
   $('scoreW').textContent = groupSizes(game.board, WHITE, game.T)[0] || 0;
-  $('undoBtn').disabled = thinking || game.moves.length === 0 || isAnimating || mode === 'online';
-  $('hintBtn').disabled = thinking || !!game.result || !myTurn() || isAnimating || mode === 'online';
-  $('resignBtn').disabled = !!game.result;
-  $('newBtn').disabled = mode === 'online' && !game.result;
-  $('newBtn').textContent = (mode === 'online' && game.result) ? '나가기' : '새 게임';
   $('levelRow').style.display = mode === 'ai' ? 'flex' : 'none';
   $('colorRow').style.display = mode === 'ai' ? 'flex' : 'none';
   $('vsLine').textContent = mode === 'online' ? `온라인 · ${oppNick} · 나는 ${humanColor===BLACK?'흑':'백'}` : '';
+  // 첫 수 전에는 설정, 그 뒤로는 기보
+  const started = game.plies > 0 || mode === 'online';
+  $('settingsBox').style.display = started ? 'none' : '';
+  $('movesBox').style.display = started ? '' : 'none';
+  if(started) renderMoveList();
+  renderActions();
 }
+function resultText(r){
+  if(r.winner === 0) return '무승부' + (r.reason === 'draw' ? ' (합의)' : '');
+  const w = r.winner === BLACK ? '흑' : '백';
+  return `${w} 승리${r.resigned ? ' (기권)' : r.timeout ? ' (시간 초과)' : '!'}`;
+}
+function renderMoveList(){
+  const box = $('moveList'); const n = game.T.N;
+  const cell = m => `(${m.cell%n+1},${Math.floor(m.cell/n)+1})${m.pulls.length ? '<span class="pull">×' + m.pulls.length + '</span>' : ''}`;
+  let html = '<table>';
+  for(let i = 0; i < game.moves.length; i += 2){
+    const a = game.moves[i], b = game.moves[i+1];
+    html += `<tr><td class="n">${i/2+1}.</td><td>${cell(a)}</td><td>${b ? cell(b) : ''}</td></tr>`;
+  }
+  box.innerHTML = html + '</table>'; box.scrollTop = box.scrollHeight;
+}
+// 왼쪽 버튼: 시작 전 [새 게임][기권] · 진행 중 [무르기][기권](+무승부, 힌트) · 종료 후 [새 게임][게임 분석]
+function renderActions(){
+  const g = $('actionGrid'); const btn = (id, label, cls) => `<button class="btn ${cls||''}" id="${id}">${label}</button>`;
+  let html = '';
+  if(game.result){
+    html += btn('newBtn', mode === 'online' ? '나가기' : '새 게임', 'primary') + btn('analyzeBtn', '게임 분석');
+  } else if(game.plies === 0 && mode !== 'online'){
+    html += btn('newBtn', '새 게임', 'primary') + btn('resignBtn', '기권');
+  } else {
+    html += btn('undoBtn', mode === 'online' ? (pendingReq === 'undo' ? '무르기 요청 중…' : '무르기') : '무르기') + btn('resignBtn', '기권');
+    if(mode !== 'ai') html += btn('drawBtn', mode === 'online' && pendingReq === 'draw' ? '무승부 요청 중…' : '무승부');
+    if(gameType === 'train' && mode !== 'online') html += btn('hintBtn', '힌트 보기');
+  }
+  g.innerHTML = html;
+  const q = id => $(id);
+  if(q('newBtn')) q('newBtn').addEventListener('click', startGame);
+  if(q('analyzeBtn')) q('analyzeBtn').addEventListener('click', analyzeCurrent);
+  if(q('resignBtn')) q('resignBtn').addEventListener('click', resign);
+  if(q('drawBtn')) q('drawBtn').addEventListener('click', offerDraw);
+  if(q('hintBtn')) q('hintBtn').addEventListener('click', showHint);
+  if(q('undoBtn')){
+    q('undoBtn').addEventListener('click', undo);
+    q('undoBtn').disabled = thinking || game.moves.length === 0 || isAnimating || (mode === 'online' && (pendingReq !== null || !myOnlineActive()));
+  }
+  if(q('hintBtn')) q('hintBtn').disabled = thinking || !myTurn() || isAnimating;
+  if(q('drawBtn')) q('drawBtn').disabled = mode === 'online' && (pendingReq !== null || !myOnlineActive());
+  if(q('resignBtn')) q('resignBtn').disabled = mode === 'online' && !myOnlineActive();
+}
+const myOnlineActive = () => !!(onlineMatch && onlineMatch.status === 'active');
 function renderWinrate(){
   if(gameType !== 'train') return;
   const box = $('winrateBox'), bar = $('evalBar');
@@ -1294,6 +1370,7 @@ function showHint(){
   });
 }
 function startGame(){
+  hideResultModal();
   if(mode === 'online'){ leaveOnline(); return; }
   const token = ++newGameToken; evalToken++; evalPending = false; winProb = null;
   const hadStones = !!(game && game.stones.length);
@@ -1311,11 +1388,17 @@ function startGame(){
   else finish();
 }
 function undo(){
-  if(thinking || gameType === 'play' || game.moves.length === 0 || isAnimating) return;
+  if(thinking || game.moves.length === 0 || isAnimating || game.result) return;
+  if(mode === 'online'){ requestOnline('undo'); return; }
   evalToken++; evalPending = false;
   undoMove(game);
   if(mode==='ai' && game.toMove!==humanColor && game.moves.length) undoMove(game);
   selected = -1; hintCell = -1; winProb = null; view.clearPreview(); switchClock(); render(); requestEval();
+}
+function offerDraw(){
+  if(game.result) return;
+  if(mode === 'online'){ requestOnline('draw'); return; }
+  if(confirm('무승부로 끝낼까요?')){ game.result = { winner: 0, reason: 'draw' }; evalToken++; evalPending = false; view.clearPreview(); render(); onGameOver(); }
 }
 function resign(){
   if(game.result) return;
@@ -1333,17 +1416,57 @@ function resign(){
 async function onGameOver(){
   if(!game || !game.result || game.saved) return;
   game.saved = true;
+  showResultModal();
   if(isGuest() || mode === 'local') return; // 게스트와 2인(같은 기기) 대전은 저장하지 않는다
   const rec = {
     mode, size: game.T.N, time_control: timeControl, ai_level: mode === 'ai' ? Number(level) : null, my_color: humanColor,
-    winner: game.result.winner, reason: game.result.resigned ? 'resign' : game.result.timeout ? 'timeout' : 'end',
+    winner: game.result.winner, reason: game.result.reason === 'draw' ? 'draw' : game.result.resigned ? 'resign' : game.result.timeout ? 'timeout' : 'end',
     black_score: groupSizes(game.board, BLACK, game.T).slice(0, 3), white_score: groupSizes(game.board, WHITE, game.T).slice(0, 3),
     moves: game.moves.map(m => m.cell).join(','), plies: game.plies,
     opponent: mode === 'online' ? (onlineMatch.black === backend.user.id ? onlineMatch.white : onlineMatch.black) : null,
     opponent_name: mode === 'online' ? oppNick : 'AI ' + level + '단계'
   };
   try { await backend.saveGame(rec); } catch(e){ toast('전적 저장 실패: ' + e.message); }
-  collectSamples({moves: game.moves.map(m => m.cell), T: game.T, winner: game.result.winner});
+  if(game.result.winner) collectSamples({moves: game.moves.map(m => m.cell), T: game.T, winner: game.result.winner});
+}
+
+/* ---------- 경기 종료 창 ---------- */
+function showResultModal(){
+  const r = game.result; const me = mode === 'local' ? null : humanColor;
+  const t = $('resultTitle'); t.className = 'rtitle';
+  if(r.winner === 0){ t.textContent = '무승부'; t.classList.add('draw'); }
+  else if(me === null){ t.textContent = (r.winner === BLACK ? '흑' : '백') + ' 승리'; t.classList.add('win'); }
+  else if(r.winner === me){ t.textContent = '승리'; t.classList.add('win'); }
+  else { t.textContent = '패배'; t.classList.add('loss'); }
+  const sb = groupSizes(game.board, BLACK, game.T)[0] || 0, sw = groupSizes(game.board, WHITE, game.T)[0] || 0;
+  const how = r.reason === 'draw' ? '합의' : r.resigned ? '기권' : r.timeout ? '시간 초과' : `${game.plies}수`;
+  $('resultSub').textContent = `${how} · 흑 ${sb} : 백 ${sw}` + (mode === 'online' ? `\nvs ${oppNick}` : '');
+  $('resultMsg').textContent = '';
+  $('resultRematch').textContent = '재대결'; $('resultRematch').disabled = false;
+  $('resultModal').classList.add('show');
+}
+function hideResultModal(){ $('resultModal').classList.remove('show'); }
+function currentRecord(){
+  return { mode, size: game.T.N, time_control: timeControl, ai_level: mode === 'ai' ? Number(level) : null, my_color: mode === 'local' ? BLACK : humanColor,
+    winner: game.result ? game.result.winner : null, reason: game.result ? (game.result.reason === 'draw' ? 'draw' : game.result.resigned ? 'resign' : game.result.timeout ? 'timeout' : 'end') : 'end',
+    black_score: groupSizes(game.board, BLACK, game.T).slice(0,3), white_score: groupSizes(game.board, WHITE, game.T).slice(0,3),
+    moves: game.moves.map(m => m.cell).join(','), plies: game.plies, created_at: new Date().toISOString(),
+    opponent_name: mode === 'online' ? oppNick : mode === 'ai' ? 'AI ' + level + '단계' : '2인' };
+}
+function analyzeCurrent(){ hideResultModal(); openReplay(currentRecord(), 'game'); }
+async function rematch(){
+  hideResultModal();
+  if(mode !== 'online'){ startGame(); return; }
+  const m = onlineMatch; if(!m) return;
+  const opp = m.black === backend.user.id ? m.white : m.black; const nick = oppNick;
+  try {
+    const list = await backend.listMatches();
+    const incoming = list.find(x => x.status === 'invited' && x.black === opp && x.white === backend.user.id);
+    leaveOnline();
+    if(incoming){ oppNick = nick; const r = await backend.updateMatch(incoming.id, {status:'active', last_move_at: null}, 'invited'); if(r) startOnlineGame(r); return; }
+    const nm = await backend.createMatch(opp, m.size, m.time_control || 0);
+    oppNick = nick; showInvite(nm);
+  } catch(e){ toast('재대결 실패: ' + e.message); }
 }
 
 /* =====================================================================
@@ -1378,14 +1501,14 @@ async function maybeRefit(){
   } catch(e){}
 }
 const fmtDate = iso => { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
-const reasonText = r => r === 'resign' ? '기권' : r === 'timeout' ? '시간 초과' : '';
+const reasonText = r => r === 'resign' ? '기권' : r === 'timeout' ? '시간 초과' : r === 'draw' ? '무승부' : '';
 function recordRow(rec){
-  const won = rec.winner === rec.my_color;
+  const draw = !rec.winner, won = rec.winner === rec.my_color;
   const me = rec.my_color === BLACK ? '흑' : '백';
   const tc = rec.time_control ? `${rec.time_control/60}분` : '시간 없음';
   const sb = (rec.black_score||[])[0] || 0, sw = (rec.white_score||[])[0] || 0;
   const div = document.createElement('div'); div.className = 'rec';
-  div.innerHTML = `<div class="res ${won?'win':'loss'}">${won?'승':'패'}</div>
+  div.innerHTML = `<div class="res ${draw?'draw':won?'win':'loss'}">${draw?'무':won?'승':'패'}</div>
     <div class="desc">${rec.opponent_name || 'AI'} · ${rec.size}×${rec.size} · ${tc} · ${me}<small>${fmtDate(rec.created_at)} · ${rec.plies}수 ${reasonText(rec.reason)}</small></div>
     <div class="score">흑 ${sb} : 백 ${sw}</div>`;
   div.addEventListener('click', () => openReplay(rec));
@@ -1407,8 +1530,8 @@ function renderHistory(){
   const box = $('histList');
   // 통계는 플레이어 대전만 센다. AI 대전은 기록으로만 남는다.
   const players = histCache.filter(r => r.mode === 'online');
-  const wins = players.filter(r => r.winner === r.my_color).length;
-  $('histSummary').innerHTML = `<div><b>${players.length}</b>경기</div><div><b>${wins}</b>승</div><div><b>${players.length - wins}</b>패</div><div><b>${players.length ? Math.round(wins/players.length*100) : 0}%</b>승률</div>`;
+  const wins = players.filter(r => r.winner && r.winner === r.my_color).length, draws = players.filter(r => !r.winner).length, losses = players.length - wins - draws;
+  $('histSummary').innerHTML = `<div><b>${players.length}</b>경기</div><div><b>${wins}</b>승</div><div><b>${losses}</b>패</div><div><b>${draws}</b>무</div><div><b>${players.length ? Math.round(wins/players.length*100) : 0}%</b>승률</div>`;
   const list = histFriend ? histCache : histCache.filter(r => histFilter === 'all' || r.mode === histFilter);
   box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">전적 없음</div>'; return; }
   list.forEach(r => box.appendChild(recordRow(r)));
@@ -1417,12 +1540,15 @@ function renderHistory(){
 /* ---------- 돌려보기 ---------- */
 let rview = null, rgame = null, rcells = [], rrec = null, autoplayTimer = 0;
 let rEvalToken = 0, rEvalPending = false, rWinProb = null, rBest = -1;
-function openReplay(rec){
+let replayReturn = 'history';
+function openReplay(rec, from){
+  replayReturn = from || 'history'; $('replayBack').textContent = replayReturn === 'game' ? '← 게임' : '← 전적';
   rrec = rec; rcells = String(rec.moves || '').split(',').filter(s => s !== '').map(Number);
   const T = buildTables(rec.size); rgame = newGame(T);
   rview.clear(); rview.build(rec.size);
-  const me = rec.my_color === BLACK ? '흑' : '백', w = rec.winner === BLACK ? '흑' : '백';
-  $('rpInfo').innerHTML = `<div><span class="k">상대</span>${rec.opponent_name || 'AI'}</div><div><span class="k">판</span>${rec.size}×${rec.size} · ${rec.time_control ? rec.time_control/60 + '분' : '시간 없음'}</div><div><span class="k">내 돌</span>${me}</div><div><span class="k">결과</span>${w} 승 ${reasonText(rec.reason)} (흑 ${(rec.black_score||[])[0]||0} : 백 ${(rec.white_score||[])[0]||0})</div><div><span class="k">날짜</span>${fmtDate(rec.created_at)}</div>`;
+  const me = rec.my_color === BLACK ? '흑' : '백';
+  const res = !rec.winner ? '무승부' : (rec.winner === BLACK ? '흑' : '백') + ' 승 ' + reasonText(rec.reason);
+  $('rpInfo').innerHTML = `<div><span class="k">상대</span>${rec.opponent_name || 'AI'}</div><div><span class="k">판</span>${rec.size}×${rec.size} · ${rec.time_control ? rec.time_control/60 + '분' : '시간 없음'}</div><div><span class="k">내 돌</span>${me}</div><div><span class="k">결과</span>${res} (흑 ${(rec.black_score||[])[0]||0} : 백 ${(rec.white_score||[])[0]||0})</div><div><span class="k">날짜</span>${fmtDate(rec.created_at)}</div>`;
   showScreen('replay'); stepTo(0);
 }
 function stepTo(i){
@@ -1430,7 +1556,7 @@ function stepTo(i){
   while(rgame.plies < i){ playMove(rgame, rcells[rgame.plies]); }
   while(rgame.plies > i){ undoMove(rgame); }
   if(rgame.plies === rcells.length && rgame.plies >= rgame.T.MAX_PLIES) rgame.result = {winner: finalWinner(rgame.board, rgame.T)};
-  else if(rgame.plies === rcells.length && rrec && rrec.reason !== 'end') rgame.result = {winner: rrec.winner, resigned: rrec.reason === 'resign', timeout: rrec.reason === 'timeout'};
+  else if(rgame.plies === rcells.length && rrec && rrec.reason !== 'end') rgame.result = {winner: rrec.winner || 0, resigned: rrec.reason === 'resign', timeout: rrec.reason === 'timeout', reason: rrec.reason};
   rBest = -1; rview.sync(rgame, {locked: true});
   $('rpCounter').textContent = `${rgame.plies} / ${rcells.length}`;
   $('rpScoreB').textContent = groupSizes(rgame.board, BLACK, rgame.T)[0] || 0;
@@ -1438,7 +1564,7 @@ function stepTo(i){
   const last = rgame.moves[rgame.moves.length - 1];
   const n = rgame.T.N;
   $('rpMove').innerHTML = last ? `<div><span class="k">${rgame.plies}수</span>${last.player===BLACK?'흑':'백'} → (${last.cell%n+1}, ${Math.floor(last.cell/n)+1})</div><div><span class="k">끌려옴</span>${last.pulls.length}개</div>` : '<div><span class="k">시작</span>빈 판</div>';
-  if(rgame.result){ const w = rgame.result.winner === BLACK ? '흑' : '백'; $('rpTurn').textContent = `${w} 승리${rgame.result.resigned ? ' (기권)' : rgame.result.timeout ? ' (시간 초과)' : ''}`; }
+  if(rgame.result){ $('rpTurn').textContent = resultText(rgame.result); }
   else $('rpTurn').textContent = (rgame.toMove === BLACK ? '흑' : '백') + ' 차례';
   $('rpPrev').disabled = $('rpFirst').disabled = rgame.plies === 0;
   $('rpNext').disabled = $('rpLast').disabled = rgame.plies === rcells.length;
@@ -1448,7 +1574,7 @@ function stepTo(i){
 // 돌려보기 분석: 현재 국면을 차례인 쪽 입장에서 평가해 승률 바와 추천 수를 보여준다
 function replayEval(){
   const t = ++rEvalToken;
-  if(rgame.result){ rEvalPending = false; rWinProb = rgame.result.winner === BLACK ? 1 : 0; rBest = -1; renderReplayEval(); return; }
+  if(rgame.result){ rEvalPending = false; rWinProb = rgame.result.winner === BLACK ? 1 : rgame.result.winner === WHITE ? 0 : 0.5; rBest = -1; renderReplayEval(); return; }
   rEvalPending = true; rWinProb = null; renderReplayEval();
   mctsChooseAsync(rgame.board, rgame.plies, rgame.toMove, {...EVAL_OPTS, T: rgame.T, isStale: () => t !== rEvalToken}, (r) => {
     if(t !== rEvalToken) return;
@@ -1526,8 +1652,8 @@ async function renderFriends(){
       const d = document.createElement('div'); d.className = 'friend' + (selectedFriend === f.id ? ' sel' : '');
       const badge = unread[f.id] ? `<span class="badge">${unread[f.id]}</span>` : '';
       // 닉네임이 먼저 보이고, 메모는 이름에 커서를 올리면 뜬다 (메모가 있으면 ✎ 표시)
-      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name"${note ? ` data-memo="${esc(note)}"` : ''}>${esc(f.nickname)}${note ? '<span class="memo-mark">✎</span>' : ''}</span>${badge}<button class="btn small">전적</button><button class="btn small primary">대국</button><button class="btn small">채팅</button>`;
-      const [h2h, play, chat] = d.querySelectorAll('button');
+      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name">${esc(f.nickname)}${note ? '<span class="memo">' + esc(note) + '</span>' : ''}</span>${badge}<div class="row2"><button class="btn small">전적</button><button class="btn small primary">플레이</button><button class="btn small">채팅</button></div>`;
+      const [h2h, play, chat] = d.querySelectorAll('.row2 button');
       h2h.addEventListener('click', e => { e.stopPropagation(); openHistory(f); });
       play.addEventListener('click', e => { e.stopPropagation(); inviteFriend(f); });
       chat.addEventListener('click', e => { e.stopPropagation(); openChat(f); });
@@ -1650,7 +1776,7 @@ function startOnlineGame(m){
   if(onlineMatch && onlineMatch.id === m.id) return;
   if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
   $('inviteBox').style.display = 'none';
-  onlineMatch = m; mode = 'online'; evalToken++; evalPending = false; winProb = null; thinking = false; isAnimating = false; selected = -1; hintCell = -1;
+  onlineMatch = m; mode = 'online'; evalToken++; evalPending = false; winProb = null; thinking = false; isAnimating = false; selected = -1; hintCell = -1; pendingReq = null; shownReq = null; hideResultModal();
   humanColor = m.black === backend.user.id ? BLACK : WHITE;
   timeControl = m.time_control || 0;
   initBoardData(m.size); view.build(N); view.clear();
@@ -1674,21 +1800,68 @@ function syncClocksFrom(m){
 }
 function applyRemote(m){
   if(!onlineMatch || m.id !== onlineMatch.id) return;
-  onlineMatch = m;
+  const prev = onlineMatch; onlineMatch = m;
+  const me = backend.user.id;
   const cells = String(m.moves || '').split(',').filter(x => x !== '').map(Number);
-  if(cells.length > game.plies && !game.result){
+  if(cells.length < game.plies){ // 무르기가 수락됨: 판을 다시 만든다
+    game = newGame(TB); view.clear(); for(const c of cells) playMove(game, c);
+    selected = -1; hintCell = -1; winProb = null; evalToken++; evalPending = false; view.clearPreview();
+    if(pendingReq === 'undo'){ pendingReq = null; toast('무르기 수락됨'); }
+    render(); requestEval();
+  } else if(cells.length > game.plies && !game.result){
     for(let i = game.plies; i < cells.length; i++){ playMove(game, cells[i]); }
     isAnimating = true; render();
     setTimeout(() => { isAnimating = false; render(); if(game.result) onGameOver(); }, 1000);
   }
+  // 내가 보낸 요청이 거절됨 (필드가 비었는데 판은 그대로)
+  if(pendingReq === 'undo' && reqAcked && !m.undo_req && cells.length >= game.plies){ pendingReq = null; reqAcked = false; toast('무르기 거절됨'); renderActions(); }
+  if(pendingReq === 'draw' && reqAcked && !m.draw_req && m.status === 'active'){ pendingReq = null; reqAcked = false; toast('무승부 거절됨'); renderActions(); }
+  // 상대가 보낸 요청
+  const opp = m.black === me ? m.white : m.black;
+  if(m.status === 'active' && m.undo_req === opp && shownReq !== 'undo') showRequest('undo', m);
+  else if(m.status === 'active' && m.draw_req === opp && shownReq !== 'draw') showRequest('draw', m);
+  else if(!m.undo_req && !m.draw_req && shownReq){ shownReq = null; $('inviteBox').style.display = 'none'; }
   if(m.status === 'active') syncClocksFrom(m);
   if(m.status === 'finished') finishFromMatch(m);
   if(m.status === 'cancelled' || m.status === 'declined'){ toast('대국이 취소됐다.'); leaveOnline(); }
 }
+async function requestOnline(kind){
+  if(!myOnlineActive() || pendingReq) return;
+  pendingReq = kind; reqAcked = false; renderActions();
+  try { const r = await backend.updateMatch(onlineMatch.id, kind === 'undo' ? {undo_req: backend.user.id} : {draw_req: backend.user.id}, 'active'); if(r){ onlineMatch = r; reqAcked = true; } else { pendingReq = null; renderActions(); } }
+  catch(e){ pendingReq = null; toast('요청 실패: ' + e.message); renderActions(); }
+}
+function showRequest(kind, m){
+  shownReq = kind;
+  const b = $('inviteBox'); b.style.display = ''; b.className = 'invite';
+  b.innerHTML = `<span class="grow">${oppNick}의 ${kind === 'undo' ? '무르기' : '무승부'} 요청</span><button class="btn small primary">수락</button><button class="btn small">거절</button>`;
+  const [ok, no] = b.querySelectorAll('button');
+  ok.addEventListener('click', async () => {
+    b.style.display = 'none'; shownReq = null;
+    try {
+      if(kind === 'undo'){
+        const me = backend.user.id, requester = m.black === me ? m.white : m.black;
+        const requesterColor = m.black === requester ? BLACK : WHITE;
+        const cells = game.moves.map(x => x.cell);
+        const back = game.toMove === requesterColor ? 2 : 1;     // 요청자 차례면 두 수, 아니면 한 수 무른다
+        const kept = cells.slice(0, Math.max(0, cells.length - back));
+        const r = await backend.updateMatch(m.id, {moves: kept.join(','), plies: kept.length, turn: kept.length % 2 === 0 ? BLACK : WHITE, undo_req: null, last_move_at: new Date().toISOString()}, 'active');
+        if(r) applyRemote(r);
+      } else {
+        const r = await backend.updateMatch(m.id, {status:'finished', winner: 0, reason:'draw', draw_req: null}, 'active');
+        if(r) applyRemote(r);
+      }
+    } catch(e){ toast('처리 실패: ' + e.message); }
+  });
+  no.addEventListener('click', async () => {
+    b.style.display = 'none'; shownReq = null;
+    try { const r = await backend.updateMatch(m.id, kind === 'undo' ? {undo_req: null} : {draw_req: null}, 'active'); if(r) onlineMatch = r; } catch(e){}
+  });
+}
 function finishFromMatch(m){
   if(!game.result){
-    game.result = { winner: m.winner, resigned: m.reason === 'resign', timeout: m.reason === 'timeout' };
-    clockRunning = 0; render(); onGameOver();
+    game.result = { winner: m.winner || 0, resigned: m.reason === 'resign', timeout: m.reason === 'timeout', reason: m.reason };
+    clockRunning = 0; pendingReq = null; shownReq = null; $('inviteBox').style.display = 'none'; render(); onGameOver();
   }
   if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
 }
@@ -1708,6 +1881,7 @@ async function reportOnlineEnd(reason, winner){
 }
 function leaveOnline(){
   if(matchUnsub){ matchUnsub(); matchUnsub = null; } if(matchPoll){ clearInterval(matchPoll); matchPoll = 0; }
+  hideResultModal(); pendingReq = null; shownReq = null; $('inviteBox').style.display = 'none';
   onlineMatch = null; oppNick = ''; mode = 'ai'; document.body.classList.remove('online-game');
   const modeBtns = $('modeSeg').querySelectorAll('button'); modeBtns.forEach(b => b.classList.toggle('on', b.dataset.v === 'ai'));
   humanColor = Number($('colorSeg').querySelector('button.on').dataset.v);
@@ -1729,10 +1903,6 @@ bindSeg('timeSeg', v => { timeControl = Number(v); startGame(); });
 bindSeg('modeSeg', v => { mode = v; startGame(); });
 bindSeg('levelSeg', v => { level = v; });
 bindSeg('colorSeg', v => { humanColor = Number(v); startGame(); });
-$('newBtn').addEventListener('click', startGame);
-$('undoBtn').addEventListener('click', undo);
-$('hintBtn').addEventListener('click', showHint);
-$('resignBtn').addEventListener('click', resign);
 $('navPlay').addEventListener('click', () => showScreen('game'));
 $('navHistory').addEventListener('click', () => openHistory(null));
 $('histSeg').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { $('histSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn)); histFilter = btn.dataset.v; renderHistory(); }));
@@ -1741,7 +1911,10 @@ $('chatSend').addEventListener('click', sendChat);
 $('chatInput').addEventListener('keydown', e => { if(e.key === 'Enter') sendChat(); });
 $('chatClose').addEventListener('click', () => { closeChat(); refreshUnread().then(() => { if(!editingFriends()) renderFriends(); }); });
 $('friendNick').addEventListener('keydown', e => { if(e.key === 'Enter') addFriend(); });
-$('replayBack').addEventListener('click', () => { stopAutoplay(); openHistory(); });
+$('replayBack').addEventListener('click', () => { stopAutoplay(); if(replayReturn === 'game') showScreen('game'); else openHistory(); });
+$('resultClose').addEventListener('click', hideResultModal);
+$('resultAnalyze').addEventListener('click', analyzeCurrent);
+$('resultRematch').addEventListener('click', rematch);
 $('rpFirst').addEventListener('click', () => { stopAutoplay(); stepTo(0); });
 $('rpPrev').addEventListener('click', () => { stopAutoplay(); stepTo(rgame.plies - 1); });
 $('rpNext').addEventListener('click', () => { stopAutoplay(); stepTo(rgame.plies + 1); });
