@@ -295,7 +295,7 @@
 <!-- ================= 상단 바 ================= -->
 <div class="topbar" id="topbar">
   <div class="left">
-    <div class="brand marble" id="brandHome">MAGNETIC</div>
+    <div class="brand marble" id="brandHome">MAGNETIC</div><span id="verTag" style="color:var(--muted);font-size:11px;margin-right:10px"></span>
     <button class="nav" id="navPlay">플레이</button>
     <button class="nav" id="navHistory">전적</button>
     <button class="nav" id="tutorialBtn">게임 규칙</button>
@@ -509,6 +509,7 @@
 /* =====================================================================
    설정: Supabase 프로젝트 정보. 비워 두면 브라우저 안에서만 저장되는 로컬 모드로 동작한다.
    ===================================================================== */
+const APP_VERSION = 'v1.6';
 const SUPABASE_URL = 'https://gjmwxwkxvyzzdpksgajp.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_ukk7OMvAgfM6qLhhODINIw_U7CD5QXI';
 
@@ -1770,6 +1771,7 @@ $('prevPageBtn').addEventListener('click', () => { if(currentPage > 1){ currentP
 $('nextPageBtn').addEventListener('click', () => { if(currentPage < totalPages){ currentPage++; updateModal(); } else { $('tutorialModal').classList.remove('show'); stopDemos(); } });
 
 (async function boot(){
+  $('verTag').textContent = APP_VERSION;
   initBoardData(9);
   view = new BoardView($('board'), {onCell: onCellClick, onEnter: onCellEnter, onLeave: onCellLeave});
   view.build(N);
