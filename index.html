@@ -192,6 +192,9 @@
   .friend.sel { background: #1a1a1a; }
   .friend .badge { background: #e3b04b; color: #000; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
   .friend .tools { flex-basis: 100%; display: flex; gap: 6px; align-items: center; padding: 6px 0 2px 19px; }
+  .friend .name { position: relative; }
+  .friend .name .memo-mark { color: var(--muted); font-size: 11px; margin-left: 5px; }
+  .friend .name[data-memo]:hover::after { content: attr(data-memo); position: absolute; left: 0; top: 100%; margin-top: 4px; background: #222; border: 1px solid #444; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; z-index: 5; }
   .friend .tools input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 5px 8px; font-size: 13px; }
   .friends { display: flex; flex-direction: column; }
   .friends #friendList { flex: 1; min-height: 0; overflow: auto; }
@@ -1521,19 +1524,20 @@ async function renderFriends(){
       const note = notes[f.id] && notes[f.id].note;
       const d = document.createElement('div'); d.className = 'friend' + (selectedFriend === f.id ? ' sel' : '');
       const badge = unread[f.id] ? `<span class="badge">${unread[f.id]}</span>` : '';
-      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name">${note ? esc(note) + '<small>' + esc(f.nickname) + '</small>' : esc(f.nickname)}</span>${badge}<button class="btn small">전적</button><button class="btn small primary">대국</button>`;
-      const [h2h, play] = d.querySelectorAll('button');
+      // 닉네임이 먼저 보이고, 메모는 이름에 커서를 올리면 뜬다 (메모가 있으면 ✎ 표시)
+      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name"${note ? ` data-memo="${esc(note)}"` : ''}>${esc(f.nickname)}${note ? '<span class="memo-mark">✎</span>' : ''}</span>${badge}<button class="btn small">전적</button><button class="btn small primary">대국</button><button class="btn small">채팅</button>`;
+      const [h2h, play, chat] = d.querySelectorAll('button');
       h2h.addEventListener('click', e => { e.stopPropagation(); openHistory(f); });
       play.addEventListener('click', e => { e.stopPropagation(); inviteFriend(f); });
+      chat.addEventListener('click', e => { e.stopPropagation(); openChat(f); });
       d.addEventListener('click', () => { selectedFriend = selectedFriend === f.id ? null : f.id; renderFriends(); });
       if(selectedFriend === f.id){
         const tools = document.createElement('div'); tools.className = 'tools';
-        tools.innerHTML = `<input id="noteInput" maxlength="20" placeholder="메모" value="${esc(note || '')}"><button class="btn small">저장</button><button class="btn small primary">채팅</button>`;
-        const [inp, save, chat] = [tools.querySelector('input'), ...tools.querySelectorAll('button')];
+        tools.innerHTML = `<input id="noteInput" maxlength="20" placeholder="메모" value="${esc(note || '')}"><button class="btn small">저장</button>`;
+        const inp = tools.querySelector('input'), save = tools.querySelector('button');
         tools.addEventListener('click', e => e.stopPropagation());
         save.addEventListener('click', async () => { try { await backend.setNote(f.id, inp.value.trim()); toast('메모 저장'); } catch(e){ toast('저장 실패: ' + e.message); } renderFriends(); });
         inp.addEventListener('keydown', e => { if(e.key === 'Enter') save.click(); });
-        chat.addEventListener('click', () => openChat(f));
         d.appendChild(tools);
       }
       list.appendChild(d);
@@ -1543,7 +1547,7 @@ async function renderFriends(){
   } catch(e){ msg.textContent = '친구 목록 오류: ' + e.message; }
 }
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
-function displayName(f){ const n = notes[f.id] && notes[f.id].note; return n || f.nickname; }
+function displayName(f){ return f.nickname; }
 
 /* ---------- 채팅 ---------- */
 async function refreshUnread(){
