@@ -563,8 +563,8 @@ function initTutorial() {
       {x:4,y:3,c:1,label:5},
       {x:5,y:5,c:2,label:6},{x:5,y:4,c:2,label:7},{x:6,y:5,c:2,label:8}
     ],
-    marks: [{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:3,y:2}],
-    caption: '흑은 4개가 이어져 있고, 백은 3개가 이어져 있습니다. 5번은 대각선으로 닿아 있어 같은 무리가 아닙니다.'
+    marks: [{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:3,y:2},{x:5,y:5},{x:5,y:4},{x:6,y:5}],
+    caption: '흑은 4개가 이어져 있고, 백은 3개가 이어져 있습니다. 5번 돌은 대각선으로 닿아 있어 같은 무리가 아닙니다.'
   });
   demos[2] = [makeDemo('demo2', 7,
     [{x:3,y:0,c:2},{x:3,y:5,c:1},{x:0,y:3,c:1},{x:4,y:3,c:2}],
@@ -761,7 +761,8 @@ function mctsChooseAsync(board, plies, toMove, opts, callback){
     let pick = kids[0];
     if(opts.topRandom && kids.length > 1) pick = kids[(rnd() * Math.min(opts.topRandom, kids.length))|0];
     if (opts.isStale && opts.isStale()) return;
-    callback({move: pick.move, winrate: pick.n ? pick.w/pick.n : 0.5});
+    // winrate: 고른 수의 승률(수 선택용, 낙관적으로 치우침). rootWinrate: 루트 전체 평균(승률 표시용, 훨씬 잘 맞음)
+    callback({move: pick.move, winrate: pick.n ? pick.w/pick.n : 0.5, rootWinrate: root.n ? 1 - root.w/root.n : 0.5});
   }
   chunk();
 }
@@ -1113,7 +1114,7 @@ function requestEval(){
   if(gameType !== 'train' || !game || game.result) return;
   const t = ++evalToken; evalPending = true; renderWinrate();
   mctsChooseAsync(game.board, game.plies, game.toMove, {...EVAL_OPTS, isStale: () => t !== evalToken}, (r) => {
-    if(t !== evalToken) return; evalPending = false; setWinProb(game.toMove, r.winrate); renderWinrate();
+    if(t !== evalToken) return; evalPending = false; setWinProb(game.toMove, r.rootWinrate); renderWinrate();
   });
 }
 function setWinProb(side, wr){ winProb = side === BLACK ? wr : 1 - wr; }
@@ -1125,7 +1126,7 @@ function runAITurn(){
     setTimeout(() => {
       thinking = false;
       if(game.result){ render(); return; }
-      setWinProb(game.toMove, r.winrate);
+      setWinProb(game.toMove, r.rootWinrate);
       playMove(game, r.move); switchClock();
       isAnimating = true; render();
       setTimeout(() => { isAnimating = false; render(); if(game.result) onGameOver(); else requestEval(); }, 1000);
@@ -1194,7 +1195,7 @@ function showHint(){
   thinking = true; evalToken++; evalPending = false; render();
   const t = evalToken;
   mctsChooseAsync(game.board, game.plies, game.toMove, {...LEVELS['4'], isStale: () => t !== evalToken}, (r) => {
-    if(t !== evalToken) return; hintCell = r.move; thinking = false; setWinProb(game.toMove, r.winrate); render();
+    if(t !== evalToken) return; hintCell = r.move; thinking = false; setWinProb(game.toMove, r.rootWinrate); render();
   });
 }
 function startGame(){
@@ -1323,7 +1324,7 @@ function replayEval(){
   rEvalPending = true; rWinProb = null; renderReplayEval();
   mctsChooseAsync(rgame.board, rgame.plies, rgame.toMove, {...EVAL_OPTS, T: rgame.T, isStale: () => t !== rEvalToken}, (r) => {
     if(t !== rEvalToken) return;
-    rEvalPending = false; rWinProb = rgame.toMove === BLACK ? r.winrate : 1 - r.winrate; rBest = r.move;
+    rEvalPending = false; rWinProb = rgame.toMove === BLACK ? r.rootWinrate : 1 - r.rootWinrate; rBest = r.move;
     rview.sync(rgame, {locked: true, hintCell: rBest}); renderReplayEval();
   });
 }
