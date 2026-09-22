@@ -62,10 +62,26 @@
   .topbar .user .nick { font-weight: 700; margin-right: 6px; }
 
   /* ---------- 3단 배치: 왼쪽 설정 · 가운데 판 · 오른쪽 친구 ---------- */
-  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr) 260px; gap: 24px; max-width: 1280px; margin: 0 auto; padding: 20px; align-items: start; }
-  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr) 260px; column-gap: 44px; row-gap: 12px; max-width: 1280px; margin: 0 auto; padding: 0 20px; align-items: start; }
+  .layout.head { padding-top: 20px; }
+  .layout.main { align-items: stretch; }
+  .layout.foot { padding-bottom: 60px; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .layout .spacer { display: none; } }
   .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .col.center { gap: 12px; }
+  /* 플레이 화면: 판·점수판·친구창의 위쪽 선을 맞추고, 친구창 아래쪽은 판 아래쪽에 맞춘다 */
+  .layout.play { grid-template-columns: 250px minmax(0, 1fr) 244px; row-gap: 12px; align-items: stretch;
+    grid-template-areas: "status status status" ". ctop ." "left board right" ". cbot ." ". count ."; }
+  .layout.play .g-status { grid-area: status; }
+  .layout.play .g-ctop { grid-area: ctop; }
+  .layout.play .g-left { grid-area: left; }
+  .layout.play .g-board { grid-area: board; align-self: start; }
+  .layout.play .g-right { grid-area: right; margin-left: 16px; display: flex; }
+  .layout.play .g-right .friends { flex: 1; min-height: 0; }
+  .layout.play .g-cbot { grid-area: cbot; }
+  .layout.play .g-count { grid-area: count; }
+  @media (max-width: 1000px) { .layout.play { grid-template-columns: 1fr; grid-template-areas: "status" "ctop" "board" "cbot" "count" "left" "right"; } .layout.play .g-right { margin-left: 0; } }
+  .status-wrap { display: flex; flex-direction: column; gap: 6px; }
   .status-box { display: flex; justify-content: space-between; align-items: center; }
   .turn-text { font-size: 22px; font-weight: bold; }
   .winrate-text { font-size: 16px; font-weight: 600; color: var(--accent); min-height: 24px; }
@@ -160,8 +176,9 @@
   .rec .score { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: 12px; white-space: nowrap; }
 
   /* ---------- 친구 (오른쪽 고정) ---------- */
-  .friends { min-height: 420px; }
+  .friends { height: 100%; display: flex; flex-direction: column; }
   .friends .head { margin-bottom: 10px; }
+  .friends #friendList { flex: 1; overflow: auto; min-height: 120px; }
   .friends .addrow { display: flex; gap: 8px; margin-bottom: 12px; }
   .friends .addrow input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 14px; }
   .friend { display: flex; align-items: center; gap: 10px; padding: 7px 6px; border-radius: 6px; font-size: 14px; }
@@ -171,6 +188,25 @@
   .friend .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .friend .name small { color: var(--muted); margin-left: 6px; font-size: 11px; }
   .friend .btn.small { padding: 5px 9px; font-size: 12px; }
+  .friend { cursor: pointer; flex-wrap: wrap; }
+  .friend.sel { background: #1a1a1a; }
+  .friend .badge { background: #e3b04b; color: #000; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+  .friend .tools { flex-basis: 100%; display: flex; gap: 6px; align-items: center; padding: 6px 0 2px 19px; }
+  .friend .tools input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 5px 8px; font-size: 13px; }
+  .friends { display: flex; flex-direction: column; }
+  .friends #friendList { flex: 1; min-height: 0; overflow: auto; }
+  /* 채팅 (친구창 아래에 붙는다) */
+  .chat { border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; display: none; flex-direction: column; height: 300px; }
+  .chat.open { display: flex; }
+  .chat .chead { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .chat .chead .x { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 18px; padding: 0 4px; }
+  .chat .chead .x:hover { color: #fff; }
+  .chat .clog { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 4px; padding: 4px 2px; font-size: 13px; }
+  .chat .msg { max-width: 85%; padding: 6px 10px; border-radius: 10px; background: #1e1e1e; align-self: flex-start; word-break: break-word; white-space: pre-wrap; }
+  .chat .msg.me { background: #2c3442; align-self: flex-end; }
+  .chat .msg small { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .chat .cin { display: flex; gap: 6px; margin-top: 6px; }
+  .chat .cin input { flex: 1; min-width: 0; background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 8px 10px; font-size: 13px; }
   .invite { background: #1a1a1a; border: 1px solid #444; border-radius: 6px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
   .invite .grow { flex: 1; min-width: 160px; }
   .invite .btn.small { padding: 6px 12px; }
@@ -199,12 +235,12 @@
   /* ---------- 튜토리얼 ---------- */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .modal-overlay.show { opacity: 1; pointer-events: auto; }
-  .modal-content { background: var(--panel); border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+  .modal-content { background: var(--panel); border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
   .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 12px; }
   .modal-header h2 { margin: 0; font-size: 20px; color: #fff; }
   .modal-header button { background: none; border: none; font-size: 24px; color: var(--muted); padding: 0; }
   .modal-header button:hover { color: #fff; }
-  .page { display: none; font-size: 15px; color: #ccc; line-height: 1.65; }
+  .page { display: none; font-size: 15px; color: #ccc; line-height: 1.65; word-break: keep-all; }
   .page.active { display: block; animation: fadeIn 0.3s; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   .page h3 { margin: 0 0 10px; font-size: 17px; color: #fff; }
@@ -214,7 +250,7 @@
   .page .note { font-size: 13px; color: var(--muted); margin-top: 8px; }
   .page b { color: #fff; }
   .page .key { color: var(--accent); font-weight: 700; }
-  .cap { margin: 6px 0 0; font-size: 13px; color: var(--accent); text-align: center; line-height: 1.4; }
+  .cap { margin: 6px 0 0; font-size: 13px; color: var(--accent); text-align: center; line-height: 1.4; word-break: keep-all; }
   .demo { --n: 7; position: relative; width: 100%; aspect-ratio: 1; margin: 0 auto; background: #6a6e73; border: 3px solid #4a4d50; border-radius: 4px; overflow: hidden; }
   .demo .dgrid { position: absolute; inset: 0; display: grid; }
   .demo .dcell { border: 1px solid rgba(0,0,0,0.25); }
@@ -266,8 +302,18 @@
 
 <!-- ================= 게임 화면 ================= -->
 <div class="screen" id="screen-game">
-  <div class="layout">
-    <div class="col">
+  <div class="layout play">
+    <div class="status-wrap g-status">
+      <div id="inviteBox" style="display:none"></div>
+      <div class="status-box">
+        <div id="turnBox" class="turn-text">흑 차례</div>
+        <div id="winrateBox" class="winrate-text train-only">흑 — · 백 —</div>
+      </div>
+      <div class="vs-line" id="vsLine"></div>
+    </div>
+    <div class="clock-row top g-ctop"><div class="who"><span class="dot w"></span>백</div><div class="clock w" id="clockW">0:00</div></div>
+
+    <div class="col g-left">
       <div class="score-card">
         <div class="score-item" style="color: #fff;">흑 최대 무리 <span id="scoreB">0</span></div>
         <div class="score-item" style="color: #aaa;">백 최대 무리 <span id="scoreW">0</span></div>
@@ -331,30 +377,27 @@
       </div>
     </div>
 
-    <div class="col center">
-      <div id="inviteBox" style="display:none"></div>
-      <div class="status-box">
-        <div id="turnBox" class="turn-text">흑 차례</div>
-        <div id="winrateBox" class="winrate-text train-only">흑 — · 백 —</div>
-      </div>
-      <div class="vs-line" id="vsLine"></div>
-      <div class="clock-row top"><div class="who"><span class="dot w"></span>백</div><div class="clock w" id="clockW">0:00</div></div>
-      <div class="board-row">
-        <div class="eval-bar train-only" id="evalBar"><div class="fill" id="evalFill"></div><div class="lbl top" id="evalTop">—</div><div class="lbl bottom" id="evalBottom">—</div></div>
-        <div class="board" id="board"></div>
-      </div>
-      <div class="clock-row bottom"><div class="who"><span class="dot b"></span>흑</div><div class="clock b" id="clockB">0:00</div></div>
-      <div id="placedCount" style="color:var(--muted); font-size:13px; text-align:right;">0 / 80</div>
+    <div class="board-row g-board">
+      <div class="eval-bar train-only" id="evalBar"><div class="fill" id="evalFill"></div><div class="lbl top" id="evalTop">—</div><div class="lbl bottom" id="evalBottom">—</div></div>
+      <div class="board" id="board"></div>
     </div>
 
-    <div class="col">
+    <div class="g-right">
       <div class="records friends" id="friendsBox">
         <div class="head"><b>친구</b><span id="friendCount" style="color:var(--muted);font-size:12px"></span></div>
         <div class="addrow"><input id="friendNick" maxlength="10" placeholder="닉네임으로 친구 추가"><button class="btn small" id="friendAddBtn">추가</button></div>
         <div id="friendList"></div>
         <div class="empty" id="friendMsg"></div>
+        <div class="chat" id="chatDock">
+          <div class="chead"><span class="st" id="chatDot"></span><span id="chatName"></span><button class="x" id="chatClose">✕</button></div>
+          <div class="clog" id="chatLog"></div>
+          <div class="cin"><input id="chatInput" maxlength="500" placeholder="메시지"><button class="btn small primary" id="chatSend">보내기</button></div>
+        </div>
       </div>
     </div>
+
+    <div class="clock-row bottom g-cbot"><div class="who"><span class="dot b"></span>흑</div><div class="clock b" id="clockB">0:00</div></div>
+    <div id="placedCount" class="g-count" style="color:var(--muted); font-size:13px; text-align:right;">0 / 80</div>
   </div>
 </div>
 
@@ -370,7 +413,7 @@
 
 <!-- ================= 돌려보기 (분석) ================= -->
 <div class="screen" id="screen-replay">
-  <div class="layout">
+  <div class="layout head main foot" style="padding-top:20px">
     <div class="col">
       <button class="btn" id="replayBack">← 전적</button>
       <div class="info" id="rpInfo"></div>
@@ -417,38 +460,38 @@
       <div class="page active" id="page1">
         <h3>1</h3>
         <p>흑과 백이 번갈아 빈칸에 돌을 하나씩 놓습니다.</p>
-        <p>게임이 끝났을 때, <span class="key">가장 큰 무리</span>가 더 큰 쪽이 이깁니다.</p>
-        <p>같은 색 돌이 상하좌우로 이어져 있으면 하나의 무리입니다.<br>대각선으로만 이어진 돌은 같은 무리가 아닙니다.</p>
+        <p>게임이 끝났을 때,<br><span class="key">가장 큰 무리</span>가 더 큰 쪽이 이깁니다.</p>
+        <p>같은 색 돌이 상하좌우로 이어져 있으면<br>하나의 무리입니다.<br>대각선으로만 이어진 돌은 같은 무리가 아닙니다.</p>
         <div class="ex-container single" id="ex1"></div>
       </div>
       <div class="page" id="page2">
         <h3>2</h3>
-        <p>돌을 하나 놓으면, 그 돌이 자석처럼 주변의 돌을 끌어당깁니다.</p>
-        <p>상·하·좌·우를 각각 살펴 <span class="key">가장 가까운 돌 하나</span>가 빈칸을 지나 새 돌 옆까지 움직입니다.</p>
+        <p>돌을 하나 놓으면, 그 돌이 자석처럼<br>주변의 돌을 끌어당깁니다.</p>
+        <p>상·하·좌·우를 각각 살펴 <span class="key">가장 가까운 돌 하나</span>가<br>빈칸을 지나 새 돌 옆까지 움직입니다.</p>
         <ul>
           <li>돌의 색은 상관없습니다.</li>
           <li>이미 붙어 있는 돌은 움직이지 않습니다.</li>
           <li>한 번에 최대 4개의 돌이 움직일 수 있습니다.</li>
         </ul>
         <div class="ex-container single" id="demo2"></div>
-        <p class="note">빈칸에 마우스를 올리면 돌이 어떻게 움직일지 먼저 확인할 수 있습니다.<br>휴대폰에서는 빈칸을 한 번 눌러보세요.</p>
+        <p class="note">빈칸에 마우스를 올리면<br>돌이 어떻게 움직일지 먼저 확인할 수 있습니다.<br>휴대폰에서는 빈칸을 한 번 눌러보세요.</p>
       </div>
       <div class="page" id="page3">
         <h3>3</h3>
-        <p>판의 가장자리는 서로 이어져 있습니다. 왼쪽 끝을 지나면 오른쪽에서, 위쪽 끝을 지나면 아래쪽에서 이어집니다.</p>
+        <p>판의 가장자리는 서로 이어져 있습니다.<br>왼쪽 끝을 지나면 오른쪽에서,<br>위쪽 끝을 지나면 아래쪽에서 이어집니다.</p>
         <ul>
-          <li><b>자석의 힘도 가장자리를 넘어갑니다.</b><br>눈앞에 돌이 없어 보여도 반대편에 돌이 있다면 그 돌을 끌어옵니다.</li>
-          <li><b>끝에 걸쳐 있는 돌도 하나의 무리로 이어집니다.</b><br>왼쪽 끝의 돌과 오른쪽 끝의 돌은 서로 붙어 있습니다.</li>
+          <li><b>자석의 힘도 가장자리를 넘어갑니다.</b><br>눈앞에 돌이 없어 보여도<br>반대편에 돌이 있다면 그 돌을 끌어옵니다.</li>
+          <li><b>끝에 걸쳐 있는 돌도 하나의 무리로 이어집니다.</b><br>왼쪽 끝의 돌과 오른쪽 끝의 돌은<br>서로 붙어 있습니다.</li>
         </ul>
         <div class="ex-container"><div id="demo3"></div><div id="ex3b"></div></div>
-        <p class="note">한 줄에 돌이 하나만 있다면 양쪽 방향에서 모두 가장 가까운 돌이 됩니다. 이 경우에는 더 가까운 쪽으로 한 번만 움직입니다.</p>
+        <p class="note">한 줄에 돌이 하나만 있다면<br>양쪽 방향에서 모두 가장 가까운 돌이 됩니다.<br>이 경우에는<br>더 가까운 쪽으로 한 번만 움직입니다.</p>
       </div>
       <div class="page" id="page4">
         <h3>4</h3>
-        <p><span class="key">빈칸이 하나만 남으면</span> 게임을 끝냅니다. 이때 흑과 백의 돌 수는 같습니다.</p>
-        <p>가장 큰 무리부터 차례대로 비교합니다. 크기가 같다면 그다음으로 큰 무리를 비교합니다.</p>
+        <p><span class="key">빈칸이 하나만 남으면</span> 게임을 끝냅니다.<br>이때 흑과 백의 돌 수는 같습니다.</p>
+        <p>가장 큰 무리부터 차례대로 비교합니다.<br>크기가 같다면 그다음으로 큰 무리를 비교합니다.</p>
         <div class="ex-container"><div id="ex4a"></div><div id="ex4b"></div></div>
-        <p class="note">끝까지 승부가 나지 않으면 후공인 백이 승리합니다.</p>
+        <p class="note">끝까지 승부가 나지 않으면<br>후공인 백이 승리합니다.</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -470,12 +513,12 @@ const SUPABASE_ANON_KEY = 'sb_publishable_ukk7OMvAgfM6qLhhODINIw_U7CD5QXI';
    튜토리얼: 정지 그림(SVG)과 움직이는 시연(mini board)
    ===================================================================== */
 function drawSvg(containerId, o) {
-  const n = o.n || 7, S = 10, W = n * S;
+  const n = o.n || 7, S = 10, W = n * S, id = containerId; // 그림마다 다른 id: 같은 id를 쓰면 숨겨진 페이지의 그라디언트를 참조해 돌이 안 보인다
   let svg = `<svg viewBox="-1 -1 ${W+2} ${W+2}" width="100%" style="display:block; margin:0 auto;">
   <defs>
-    <radialGradient id="bg" cx="35%" cy="30%" r="60%"><stop offset="0%" stop-color="#555"/><stop offset="100%" stop-color="#000"/></radialGradient>
-    <radialGradient id="wg" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#bbb"/></radialGradient>
-    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#E3B04B"/></marker>
+    <radialGradient id="bg-${id}" cx="35%" cy="30%" r="60%"><stop offset="0%" stop-color="#555"/><stop offset="100%" stop-color="#000"/></radialGradient>
+    <radialGradient id="wg-${id}" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#bbb"/></radialGradient>
+    <marker id="arrow-${id}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#E3B04B"/></marker>
   </defs>
   <rect x="0" y="0" width="${W}" height="${W}" fill="#6a6e73" stroke="#4a4d50" stroke-width="1.5"/>`;
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
@@ -484,18 +527,18 @@ function drawSvg(containerId, o) {
     svg += `<rect x="${m.x*S+0.6}" y="${m.y*S+0.6}" width="${S-1.2}" height="${S-1.2}" fill="rgba(227,176,75,0.28)" stroke="#E3B04B" stroke-width="1"/>`;
   });
   (o.stones || []).forEach(s => {
-    const fill = s.c === 1 ? 'url(#bg)' : 'url(#wg)';
-    svg += `<circle cx="${s.x*S+5}" cy="${s.y*S+5}" r="3.9" fill="${fill}"/>`;
+    const fill = s.c === 1 ? `url(#bg-${id})` : `url(#wg-${id})`;
+    svg += `<circle cx="${s.x*S+5}" cy="${s.y*S+5}" r="3.9" fill="${fill}" stroke="${s.c===1?'#222':'#999'}" stroke-width="0.4"/>`;
     if (s.label !== undefined) svg += `<text x="${s.x*S+5}" y="${s.y*S+6.6}" font-size="4.6" font-family="sans-serif" font-weight="bold" fill="${s.c===1?'#fff':'#000'}" text-anchor="middle">${s.label}</text>`;
   });
   (o.arrows || []).forEach(a => {
-    svg += `<line x1="${a.x1*S}" y1="${a.y1*S}" x2="${a.x2*S}" y2="${a.y2*S}" stroke="#E3B04B" stroke-width="1.3" marker-end="url(#arrow)"/>`;
+    svg += `<line x1="${a.x1*S}" y1="${a.y1*S}" x2="${a.x2*S}" y2="${a.y2*S}" stroke="#E3B04B" stroke-width="1.3" marker-end="url(#arrow-${id})"/>`;
   });
   svg += `</svg>`;
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = svg;
-  if (o.caption) { const p = document.createElement('p'); p.className = 'cap'; p.textContent = o.caption; el.appendChild(p); }
+  if (o.caption) { const p = document.createElement('p'); p.className = 'cap'; p.innerHTML = o.caption.split('\n').map(t => t.replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))).join('<br>'); el.appendChild(p); }
 }
 
 function makeDemo(containerId, n, initial, place, caption) {
@@ -507,7 +550,7 @@ function makeDemo(containerId, n, initial, place, caption) {
   for (let i = 0; i < n * n; i++) { const d = document.createElement('div'); d.className = 'dcell'; grid.appendChild(d); cells.push(d); }
   const layer = document.createElement('div'); layer.className = 'layer';
   box.appendChild(grid); box.appendChild(layer); host.appendChild(box);
-  if (caption) { const p = document.createElement('p'); p.className = 'cap'; p.textContent = caption; host.appendChild(p); }
+  if (caption) { const p = document.createElement('p'); p.className = 'cap'; p.innerHTML = caption.split('\n').map(t => t.replace(/[<>&]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[ch]))).join('<br>'); host.appendChild(p); }
 
   const T = buildTables(n); const target = place.y * n + place.x;
   let token = 0, timers = [];
@@ -564,30 +607,30 @@ function initTutorial() {
       {x:5,y:5,c:2,label:6},{x:5,y:4,c:2,label:7},{x:6,y:5,c:2,label:8}
     ],
     marks: [{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:3,y:2},{x:5,y:5},{x:5,y:4},{x:6,y:5}],
-    caption: '흑은 4개가 이어져 있고, 백은 3개가 이어져 있습니다. 5번 돌은 대각선으로 닿아 있어 같은 무리가 아닙니다.'
+    caption: '흑은 4개, 백은 3개가 이어져 있습니다.\n5번 돌은 대각선으로 닿아 있어\n같은 무리가 아닙니다.'
   });
   demos[2] = [makeDemo('demo2', 7,
     [{x:3,y:0,c:2},{x:3,y:5,c:1},{x:0,y:3,c:1},{x:4,y:3,c:2}],
     {x:3,y:3,c:1},
-    '노란 칸에 흑돌을 놓으면, 오른쪽 백돌은 이미 붙어 있으므로 움직이지 않습니다.')];
+    '노란 칸에 흑돌을 놓으면,\n오른쪽 백돌은 이미 붙어 있으므로\n움직이지 않습니다.')];
   demos[3] = [makeDemo('demo3', 7,
     [{x:5,y:3,c:2}],
     {x:1,y:3,c:1},
-    '오른쪽 끝을 지나면 반대편인 왼쪽 끝으로 이어집니다.')];
+    '오른쪽 끝을 지나면\n반대편인 왼쪽 끝으로\n이어집니다.')];
   drawSvg('ex3b', {
-    stones: [{x:6,y:2,c:1,label:1},{x:0,y:2,c:1,label:2},{x:1,y:2,c:1,label:3}],
-    marks: [{x:6,y:2},{x:0,y:2},{x:1,y:2}],
+    stones: [{x:0,y:2,c:1,label:1},{x:1,y:2,c:1,label:2},{x:6,y:2,c:1,label:3}],
+    marks: [{x:0,y:2},{x:1,y:2},{x:6,y:2}],
     arrows: [{x1:6.6,y1:2.5,x2:7.05,y2:2.5},{x1:-0.05,y1:2.5,x2:0.45,y2:2.5}],
-    caption: '양쪽 끝의 돌도 서로 붙어 있습니다. 3개가 하나의 무리가 됩니다.'
+    caption: '양쪽 끝의 돌도 서로 붙어 있습니다.\n3개가 하나의 무리가 됩니다.'
   });
   const bigB = [{x:1,y:1,c:1,label:1},{x:2,y:1,c:1,label:2},{x:2,y:2,c:1,label:3}];
   const bigW = [{x:4,y:1,c:2,label:1},{x:5,y:1,c:2,label:2},{x:5,y:2,c:2,label:3}];
   drawSvg('ex4a', {
     stones: [...bigB, ...bigW, {x:1,y:5,c:1,label:1},{x:2,y:5,c:1,label:2},{x:5,y:5,c:2,label:1}],
-    marks: [{x:1,y:5},{x:2,y:5},{x:5,y:5}],
-    caption: '가장 큰 무리 3:3 → 두 번째 무리 2:1 → 흑 승'
+    marks: [{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:4,y:1},{x:5,y:1},{x:5,y:2},{x:1,y:5},{x:2,y:5},{x:5,y:5}],
+    caption: '가장 큰 무리 3:3\n→ 두 번째 무리 2:1\n→ 흑 승'
   });
-  drawSvg('ex4b', { stones: [...bigB, ...bigW], caption: '모두 같음 → 백 승' });
+  drawSvg('ex4b', { stones: [...bigB, ...bigW], marks: [{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:4,y:1},{x:5,y:1},{x:5,y:2}], caption: '모두 같음\n→ 백 승' });
 }
 
 /* =====================================================================
@@ -1017,6 +1060,23 @@ class SupabaseBackend {
   }
   async nickname(id){ const {data} = await this.sb.from('profiles').select('nickname').eq('id', id).maybeSingle(); return data ? data.nickname : '?'; }
 
+  /* ---- 친구 메모 · 채팅 ---- */
+  async getNotes(){ const {data} = await this.sb.from('friend_notes').select('friend,note,last_read').eq('owner', this.user.id); const m = {}; (data||[]).forEach(r => m[r.friend] = r); return m; }
+  async setNote(friendId, note){ const {error} = await this.sb.from('friend_notes').upsert({owner: this.user.id, friend: friendId, note: note || null}); if(error) throw new Error(error.message); }
+  async markRead(friendId){ const {error} = await this.sb.from('friend_notes').upsert({owner: this.user.id, friend: friendId, last_read: new Date().toISOString()}); if(error) throw new Error(error.message); }
+  async listMessages(friendId, limit){
+    const me = this.user.id;
+    const {data, error} = await this.sb.from('messages').select('id,created_at,sender,receiver,body')
+      .or(`and(sender.eq.${me},receiver.eq.${friendId}),and(sender.eq.${friendId},receiver.eq.${me})`).order('created_at', {ascending:false}).limit(limit || 100);
+    if(error) throw new Error(error.message); return (data || []).reverse();
+  }
+  async sendMessage(friendId, body){ const {data, error} = await this.sb.from('messages').insert({sender: this.user.id, receiver: friendId, body}).select().single(); if(error) throw new Error(error.message); return data; }
+  async recentReceived(limit){ const {data} = await this.sb.from('messages').select('id,created_at,sender').eq('receiver', this.user.id).order('created_at', {ascending:false}).limit(limit || 200); return data || []; }
+  subscribeMessages(cb){
+    const ch = this.sb.channel('msg-' + this.user.id).on('postgres_changes', {event:'INSERT', schema:'public', table:'messages', filter:`receiver=eq.${this.user.id}`}, p => cb(p.new)).subscribe();
+    return () => { try { this.sb.removeChannel(ch); } catch(e){} };
+  }
+
   /* ---- 승률 보정 학습 ---- */
   async getParams(){ const {data} = await this.sb.from('model_params').select('*').eq('id', 1).maybeSingle(); return data; }
   async saveParams(p){ const {error} = await this.sb.from('model_params').upsert({id: 1, a: p.a, b: p.b, c: p.c, n: p.n, updated_at: new Date().toISOString()}); if(error) throw new Error(error.message); }
@@ -1120,6 +1180,7 @@ let winProb = null, evalPending = false, evalToken = 0, newGameToken = 0;
 const EVAL_OPTS = {iters: 2000, timeMs: 1500};   // 승률 표시·표본 수집에 쓰는 탐색량 (보정 계수와 짝이다)
 let settingsSize = 9;                 // 설정에서 고른 판 크기 (온라인 대국이 끝나면 되돌린다)
 let onlineMatch = null, oppNick = '', matchUnsub = null, matchPoll = 0, socialTimers = [];
+let friendsCache = [], notes = {}, unread = {}, selectedFriend = null, chatWith = null, chatMsgs = [], msgUnsub = null;
 
 function myTurn(){ return !!game && !game.result && !thinking && !isAnimating && (mode==='local' || game.toMove===humanColor) && !(mode==='online' && (!onlineMatch || onlineMatch.status !== 'active')); }
 function onCellClick(i){
@@ -1345,7 +1406,7 @@ function renderHistory(){
   const wins = players.filter(r => r.winner === r.my_color).length;
   $('histSummary').innerHTML = `<div><b>${players.length}</b>경기</div><div><b>${wins}</b>승</div><div><b>${players.length - wins}</b>패</div><div><b>${players.length ? Math.round(wins/players.length*100) : 0}%</b>승률</div>`;
   const list = histFriend ? histCache : histCache.filter(r => histFilter === 'all' || r.mode === histFilter);
-  box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">경기가 없다.</div>'; return; }
+  box.innerHTML = ''; if(!list.length){ box.innerHTML = '<div class="empty">전적 없음</div>'; return; }
   list.forEach(r => box.appendChild(recordRow(r)));
 }
 
@@ -1424,9 +1485,12 @@ function startSocial(){
   $('friendsBox').style.display = '';
   const beat = () => backend.heartbeat().catch(() => {});
   beat(); renderFriends(); pollMatches();
-  socialTimers = [setInterval(beat, 30000), setInterval(renderFriends, 20000), setInterval(pollMatches, 4000)];
+  if(backend.subscribeMessages) msgUnsub = backend.subscribeMessages(onIncomingMessage);
+  socialTimers = [setInterval(beat, 30000), setInterval(() => { if(!editingFriends()) renderFriends(); }, 20000), setInterval(pollMatches, 4000), setInterval(pollChat, 5000)];
 }
-function stopSocial(){ socialTimers.forEach(clearInterval); socialTimers = []; }
+function stopSocial(){ socialTimers.forEach(clearInterval); socialTimers = []; if(msgUnsub){ msgUnsub(); msgUnsub = null; } closeChat(); selectedFriend = null; }
+// 메모를 입력하는 중이면 목록을 다시 그리지 않는다 (입력이 날아가지 않게)
+function editingFriends(){ const a = document.activeElement; return !!(a && a.id === 'noteInput'); }
 
 async function renderFriends(){
   if(isGuest() || !backend.online) return;
@@ -1450,17 +1514,86 @@ async function renderFriends(){
       list.appendChild(d);
     }
     acc.sort((a,b) => (b.online - a.online) || a.nickname.localeCompare(b.nickname));
+    friendsCache = acc;
+    if(backend.getNotes){ try { notes = await backend.getNotes(); } catch(e){} }
+    await refreshUnread();
     for(const f of acc){
-      const d = document.createElement('div'); d.className = 'friend';
-      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name">${f.nickname}</span><button class="btn small">전적</button><button class="btn small primary">대국</button>`;
+      const note = notes[f.id] && notes[f.id].note;
+      const d = document.createElement('div'); d.className = 'friend' + (selectedFriend === f.id ? ' sel' : '');
+      const badge = unread[f.id] ? `<span class="badge">${unread[f.id]}</span>` : '';
+      d.innerHTML = `<span class="st ${f.online?'on':''}"></span><span class="name">${note ? esc(note) + '<small>' + esc(f.nickname) + '</small>' : esc(f.nickname)}</span>${badge}<button class="btn small">전적</button><button class="btn small primary">대국</button>`;
       const [h2h, play] = d.querySelectorAll('button');
-      h2h.addEventListener('click', () => openHistory(f));
-      play.addEventListener('click', () => inviteFriend(f));
+      h2h.addEventListener('click', e => { e.stopPropagation(); openHistory(f); });
+      play.addEventListener('click', e => { e.stopPropagation(); inviteFriend(f); });
+      d.addEventListener('click', () => { selectedFriend = selectedFriend === f.id ? null : f.id; renderFriends(); });
+      if(selectedFriend === f.id){
+        const tools = document.createElement('div'); tools.className = 'tools';
+        tools.innerHTML = `<input id="noteInput" maxlength="20" placeholder="메모" value="${esc(note || '')}"><button class="btn small">저장</button><button class="btn small primary">채팅</button>`;
+        const [inp, save, chat] = [tools.querySelector('input'), ...tools.querySelectorAll('button')];
+        tools.addEventListener('click', e => e.stopPropagation());
+        save.addEventListener('click', async () => { try { await backend.setNote(f.id, inp.value.trim()); toast('메모 저장'); } catch(e){ toast('저장 실패: ' + e.message); } renderFriends(); });
+        inp.addEventListener('keydown', e => { if(e.key === 'Enter') save.click(); });
+        chat.addEventListener('click', () => openChat(f));
+        d.appendChild(tools);
+      }
       list.appendChild(d);
     }
     $('friendCount').textContent = acc.length ? `${acc.filter(f => f.online).length} / ${acc.length}` : '';
     msg.textContent = '';
   } catch(e){ msg.textContent = '친구 목록 오류: ' + e.message; }
+}
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+function displayName(f){ const n = notes[f.id] && notes[f.id].note; return n || f.nickname; }
+
+/* ---------- 채팅 ---------- */
+async function refreshUnread(){
+  if(!backend.recentReceived) return;
+  try {
+    const recent = await backend.recentReceived(200); const u = {};
+    for(const m of recent){ const lr = notes[m.sender] && notes[m.sender].last_read ? new Date(notes[m.sender].last_read).getTime() : 0; if(new Date(m.created_at).getTime() > lr && !(chatWith && chatWith.id === m.sender)) u[m.sender] = (u[m.sender] || 0) + 1; }
+    unread = u;
+  } catch(e){}
+}
+async function openChat(f){
+  chatWith = f; unread[f.id] = 0;
+  $('chatDock').classList.add('open'); $('chatName').textContent = displayName(f); $('chatDot').className = 'st' + (f.online ? ' on' : '');
+  $('chatLog').innerHTML = '';
+  try { chatMsgs = await backend.listMessages(f.id, 100); } catch(e){ chatMsgs = []; }
+  renderChat(); markChatRead();
+  if(!editingFriends()) renderFriends();
+  setTimeout(() => $('chatInput').focus(), 30);
+}
+function closeChat(){ chatWith = null; chatMsgs = []; $('chatDock').classList.remove('open'); }
+async function markChatRead(){ if(!chatWith || !backend.markRead) return; try { await backend.markRead(chatWith.id); notes[chatWith.id] = {...(notes[chatWith.id] || {}), last_read: new Date().toISOString()}; } catch(e){} }
+function renderChat(){
+  if(!chatWith) return;
+  const log = $('chatLog'); const me = backend.user.id;
+  log.innerHTML = chatMsgs.map(m => `<div class="msg ${m.sender === me ? 'me' : ''}">${esc(m.body)}<small>${fmtTime(m.created_at)}</small></div>`).join('');
+  log.scrollTop = log.scrollHeight;
+}
+const fmtTime = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+async function sendChat(){
+  const inp = $('chatInput'); const body = inp.value.trim(); if(!body || !chatWith) return;
+  inp.value = '';
+  try { const m = await backend.sendMessage(chatWith.id, body); chatMsgs.push(m); renderChat(); }
+  catch(e){ toast('전송 실패: ' + e.message); inp.value = body; }
+}
+function onIncomingMessage(m){
+  if(!m || m.sender === backend.user.id) return;
+  if(chatWith && m.sender === chatWith.id){ if(!chatMsgs.some(x => x.id === m.id)){ chatMsgs.push(m); renderChat(); } markChatRead(); return; }
+  unread[m.sender] = (unread[m.sender] || 0) + 1;
+  const f = friendsCache.find(x => x.id === m.sender); toast(`${f ? displayName(f) : '친구'}: ${m.body.slice(0, 40)}`);
+  if(!editingFriends()) renderFriends();
+}
+// 실시간이 끊겼을 때를 대비한 보조: 열린 채팅은 5초마다 새 메시지를 확인한다
+async function pollChat(){
+  if(!chatWith || !backend.listMessages) return;
+  try {
+    const list = await backend.listMessages(chatWith.id, 100);
+    const known = new Set(chatMsgs.map(m => m.id)); let added = false;
+    for(const m of list) if(!known.has(m.id)){ chatMsgs.push(m); added = true; }
+    if(added){ chatMsgs.sort((a,b) => a.created_at < b.created_at ? -1 : 1); renderChat(); markChatRead(); }
+  } catch(e){}
 }
 async function addFriend(){
   const nick = $('friendNick').value.trim(); if(!nick) return;
@@ -1599,6 +1732,9 @@ $('navPlay').addEventListener('click', () => showScreen('game'));
 $('navHistory').addEventListener('click', () => openHistory(null));
 $('histSeg').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => { $('histSeg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn)); histFilter = btn.dataset.v; renderHistory(); }));
 $('friendAddBtn').addEventListener('click', addFriend);
+$('chatSend').addEventListener('click', sendChat);
+$('chatInput').addEventListener('keydown', e => { if(e.key === 'Enter') sendChat(); });
+$('chatClose').addEventListener('click', () => { closeChat(); refreshUnread().then(() => { if(!editingFriends()) renderFriends(); }); });
 $('friendNick').addEventListener('keydown', e => { if(e.key === 'Enter') addFriend(); });
 $('replayBack').addEventListener('click', () => { stopAutoplay(); openHistory(); });
 $('rpFirst').addEventListener('click', () => { stopAutoplay(); stepTo(0); });
